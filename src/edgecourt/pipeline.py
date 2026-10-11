@@ -40,7 +40,7 @@ def fetch_real(sports: list[str]) -> dict:
                 elif sport == "soccer":
                     df, path, digest, cov = connectors.fetch_statsbomb()
                 else:
-                    df, path, digest, cov = connectors.fetch_balldontlie([2022, 2023, 2024])
+                    df, path, digest, cov = connectors.fetch_balldontlie(list(config.NBA_SEASONS))
                 res = s.import_games(df, sport, DEFAULT_SOURCE[sport], str(path), digest, cov)
                 out[sport] = {"statut": "ok", **res, "couverture": cov}
             except connectors.Blocked as e:

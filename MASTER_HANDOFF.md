@@ -4,7 +4,7 @@
 - Python 3.11 (uv) dans `.venv`, dépendances figées (`requirements.txt`). Serveur Streamlit sur 127.0.0.1:8501.
 - Soccer : **Premier League 2015/16** (StatsBomb Open Data) — seule saison de championnat complète ; volume très faible, assumé.
 - NFL : nflverse-data `schedules/games.csv` (CC-BY-4.0), saisons 2010–2026 ; les colonnes de cotes du fichier ne sont **pas** utilisées (sans horodatage).
-- NBA : adaptateur BALLDONTLIE prêt, **bloqué faute de clé** (Games annoncé gratuit avec clé ; requête sans clé = 401). Jamais testé contre l'API réelle.
+- NBA : BALLDONTLIE Games (offre gratuite, clé gratuite dans `.env`) **importée et évaluée** ; accès gratuit confirmé le 2026-10-11 (HTTP 200, 5 req/min).
 - Cutoff d'une prévision = début du jour du match (UTC) ; seule la date est fiable. Matchs du jour regroupés.
 - Découpage fixe par date 60/20/20 (entraînement / validation+calibration / test final), persisté dans `artifacts/<origine>/split_<sport>.json`. Modèles appris (logit, ridge) **figés** à la fin de l'entraînement ; Elo, Poisson, référence se mettent à jour en ligne avec le passé.
 - Sélection du modèle sur la validation seulement ; calibrateur de Platt sur la validation seulement, désactivé si n < 300.
@@ -34,7 +34,7 @@
 ## Données réelles (au 2026-10-11)
 - NFL : 4 635 lignes (4 428 terminés, 207 à venir). Test final 874 matchs : log loss logit calibré 0,640 vs référence simple 0,696 (écart −0,056, IC95 par semaines [−0,076 ; −0,036]) → « écart favorable vs référence simple, marché non battu ni comparé ». Total : −0,013 vs référence. Ne démontre **aucun** avantage économique.
 - Soccer : 380 matchs ; 69 prévisions de test → **preuves insuffisantes**. Modèle choisi sur validation : Poisson, non calibré (n = 83).
-- NBA : 0 match (clé absente) → « données insuffisantes ».
+- NBA : 6 605 matchs (saisons 2021–2025). Découpage chronologique : entraînement ≤ 2024-10-22 (3 964 matchs), validation/calibration 2024-10-23 … 2025-10-21 (1 321, Platt), **test final 2025-26 : 1 320 matchs**. Logit retenu sur validation. Test : log loss 0,609 (calibré 0,609) vs référence simple 0,687 (écart −0,078, IC95 par semaines [−0,107 ; −0,045]) ; total (ligne 225,5) : −0,025 vs référence. Ne compare **pas** au marché (aucune cote) : aucun avantage économique démontré. Aucun match à venir (saison 2026-27 non commencée / non importée).
 - Aucune cote réelle : aucun EV/ROI réel. La simulation chiffrée existe **uniquement** en démo avec cotes *fixtures* (teste règlements, ne prouve rien).
 
 ## Limites connues
@@ -45,11 +45,11 @@
 - Parcours démo ≈ 1,5 min (boucles Python par match) ; acceptable, optimisable.
 - Droit commercial non accordé sur StatsBomb ; attribution obligatoire en cas de publication.
 
-## Blocages / besoins utilisateur
+- NBA : débloquée (clé en place). Reste : cotes horodatées pour un rendement évaluable.
 - NBA : créer un compte **gratuit** BALLDONTLIE, mettre la clé dans `.env`, relancer `.\scripts\fetch.ps1`, vérifier que Games répond en niveau Free.
 - Cotes horodatées (CSV) pour obtenir un rendement évaluable ; aucune dépense nécessaire pour continuer.
 
 ## Prochaine action
-1. Obtenir la clé NBA gratuite et exécuter `fetch.ps1`.
-2. Fournir un CSV de cotes avec `observed_at` fiable (NFL ou NBA) pour la première comparaison au marché.
+1. Fournir un CSV de cotes avec `observed_at` fiable (NFL ou NBA) pour la première comparaison au marché.
+2. Après le début de la saison NBA 2026-27 : ajouter la saison 2026 dans `config.NBA_SEASONS`, relancer `fetch.ps1`, puis une version « à venir » NBA (la commande `refit` existe pour NFL ; elle accepte `--sport nba`).
 3. Ajouter plus de saisons soccer via CSV autorisé pour dépasser 200 prévisions de test.

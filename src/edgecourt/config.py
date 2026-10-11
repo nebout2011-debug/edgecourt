@@ -19,6 +19,7 @@ EV_THRESHOLD = 0.03    # seuil de simulation fixé a priori (espérance par unit
 HORIZON_HOURS = 0      # cutoff = début du jour du match (UTC) - heures ; voir docs/DATA_SOURCES.md
 SOCCER_COMPETITION = ("Premier League", "2015/2016")  # StatsBomb open data, 380 matchs complets
 NFL_FIRST_SEASON = 2010
+NBA_SEASONS = (2021, 2022, 2023, 2024, 2025)  # BALLDONTLIE, offre gratuite : 5 requêtes/min, ≈ 15 min d'import
 
 # Paramètres Elo / modèles : fixés a priori. Les variantes essayées sont listées dans ELO_K_GRID.
 ELO = {

@@ -32,9 +32,9 @@ Les données brutes sont conservées sous `data/raw/<source>/` (ignorées par gi
 |---|---|
 | URL | https://docs.balldontlie.io/ ; spec https://www.balldontlie.io/openapi/nba.yml |
 | Accès | Une clé API est **requise** (requête sans clé testée le 2026-10-11 : HTTP 401). Le tableau « Account Tiers » de la documentation indique que **Teams, Players et Games sont accessibles au niveau Free** (5 requêtes/min, 0 $). Tout le reste (stats par match, cotes, props, etc.) est payant. Les essais 48 h exigent un moyen de paiement : **non utilisés**. |
-| Statut | Aucune clé n'est disponible ici → **bloqué**, aucun test réel de l'endpoint n'a été fait. L'adaptateur (`edgecourt.data.connectors.fetch_balldontlie`) est écrit d'après la spec et testé sur une réponse fixture seulement. |
-| Seul besoin utilisateur | Créer un compte **gratuit** sur balldontlie.io, copier la clé dans `.env` (`BALLDONTLIE_API_KEY=`), puis `.\scripts\fetch.ps1`. Vérifier alors que Games répond bien en niveau Free. |
-| Alternative | Import CSV de données dont l'utilisateur détient les droits (`samples/games_example.csv`). |
+| Accès | Une clé API est **requise** (sans clé : HTTP 401). Le tableau « Account Tiers » indique **Teams, Players et Games accessibles au niveau Free** (5 requêtes/min, 0 $) ; le reste est payant. **Confirmé le 2026-10-11** avec une clé gratuite : `GET /v1/games` → HTTP 200, en-tête de limite 5/min. Les essais 48 h exigent un moyen de paiement : **non utilisés**. |
+| Statut | **Utilisée** : 6 605 matchs importés (saisons 2021–2025, 1 319–1 323 par saison, saison régulière + playoffs, hors présaison), 0 rejet. Pause de 13 s entre requêtes (≈ 4,6/min), ≈ 15 min d'import. Clé lue depuis `.env` (ignoré par git), jamais journalisée. |
+| Reproduire | Clé gratuite dans `.env` (`BALLDONTLIE_API_KEY=`), puis `.\scriptsetch.ps1` (saisons dans `config.NBA_SEASONS`). |
 | Limites | Les dates de l'API peuvent être exprimées en UTC : la date retenue est celle fournie. Prolongations non fournies par l'endpoint (laissées vides). |
 
 ## Cotes
