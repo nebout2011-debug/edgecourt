@@ -1,0 +1,4 @@
+game_id,season,game_date,home_team,away_team,home_score,away_score,status,competition,overtime,neutral,game_type
+EX-0001,2099,2099-10-01,EXEMPLE A,EXEMPLE B,101,98,final,EXEMPLE,false,false,regular
+EX-0002,2099,2099-10-02,EXEMPLE C,EXEMPLE A,95,110,final,EXEMPLE,false,false,regular
+EX-0003,2099,2099-10-09,EXEMPLE B,EXEMPLE C,,,scheduled,EXEMPLE,,false,regular

@@ -1,0 +1,5 @@
+event_id,bookmaker,market,selection,line,odds_decimal,observed_at,settlement_rule
+EX-0001,EXEMPLE-BOOK,moneyline,home,,1.90,2099-09-30T18:00:00Z,standard
+EX-0001,EXEMPLE-BOOK,moneyline,away,,1.95,2099-09-30T18:00:00Z,standard
+EX-0001,EXEMPLE-BOOK,total,over,199.5,1.91,2099-09-30T18:00:00Z,standard
+EX-0001,EXEMPLE-BOOK,total,under,199.5,1.91,2099-09-30T18:00:00Z,standard
