@@ -17,7 +17,7 @@
 - Journal append-only chaîné (`journal.jsonl`) : config, prediction (backtest | prospective), result, settlement ; relecture idempotente, altération détectée.
 - Rapport par sport : effectifs, Brier/log loss, calibration avec effectifs, IC par blocs de semaines ISO, configurations essayées (`configs_tried.jsonl`).
 - UI (Streamlit) : Matchs, Analyse, Validation (réel et démo séparés), Simulation, Données (import CSV, statut connecteurs, licences).
-- **Tests : 22 passés** (`.\scripts\test.ps1`, ≈ 50 s) : absence de fuite (propre score, même jour), invariance d'une prévision passée après ajout de résultats futurs, imports idempotents, sommes de probabilités, nuls/remboursements, refus des cotes futures, journal persistant, séparation démo/réel, parcours complet. Mutation vérifiée : une fuite injectée volontairement fait échouer le test.
+- **Tests : 24 passés** (`.\scripts\test.ps1`, ≈ 50 s) : absence de fuite (propre score, même jour), invariance d'une prévision passée après ajout de résultats futurs, imports idempotents, sommes de probabilités, nuls/remboursements, refus des cotes futures, journal persistant, séparation démo/réel, parcours complet. Mutation vérifiée : une fuite injectée volontairement fait échouer le test.
 - **Vérification réelle** : application démarrée et inspectée dans Chrome (Matchs NFL réel, Validation NFL réel, Données, Simulation en mode démo). Onglet « Analyse d'un match », filtres date/équipe et upload CSV **non** inspectés visuellement.
 - Commit local : voir `git log` (aucun dépôt distant).
 
