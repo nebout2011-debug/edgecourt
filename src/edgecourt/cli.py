@@ -21,6 +21,9 @@ def main(argv: list[str] | None = None) -> int:
     r = sub.add_parser("run", help="valide, entraîne, évalue, simule")
     r.add_argument("--origin", choices=config.ORIGINS, default="real")
     r.add_argument("--sport", choices=[*config.SPORTS, "all"], default="all")
+    rf = sub.add_parser("refit", help="nouvelle version du modèle pour les matchs à venir (résultats terminés connus)")
+    rf.add_argument("--origin", choices=config.ORIGINS, default="real")
+    rf.add_argument("--sport", choices=config.SPORTS, default="nfl")
     g = sub.add_parser("import-games", help="import CSV de matchs (droits d'usage requis)")
     g.add_argument("--sport", choices=config.SPORTS, required=True)
     g.add_argument("--csv", required=True)
@@ -41,6 +44,9 @@ def main(argv: list[str] | None = None) -> int:
     elif a.cmd == "run":
         res = pipeline.run_all(a.origin, sports(a.sport))
         _p({sp: {k: v for k, v in r_.items() if k in ("modele_vainqueur_selectionne_sur_validation", "calibration", "effectifs", "journal", "statut", "detail")} for sp, r_ in res.items()})
+    elif a.cmd == "refit":
+        r_ = pipeline.refit_upcoming(a.origin, a.sport)
+        _p({k: r_.get(k) for k in ("version", "date_limite_donnees", "resultats_termines_utilises", "split", "modele_vainqueur_selectionne_sur_validation", "calibration", "a_venir", "journal", "statut", "detail")})
     elif a.cmd == "import-games":
         _p(pipeline.import_games_csv("real", a.sport, a.csv))
     elif a.cmd == "import-odds":

@@ -86,3 +86,36 @@ def test_insufficient_or_blocked_source_does_not_stop_others(tmp_env):
     assert rep["statut"] == "données insuffisantes"
     _load_demo("nfl", with_odds=False)
     assert "vainqueur" in pipeline.run_sport("demo", "nfl")
+
+
+def test_refit_creates_new_version_without_touching_backtest(tmp_env):
+    _load_demo("nfl", with_odds=False, scheduled_tail=8)
+    pipeline.run_sport("demo", "nfl")
+    d = config.origin_dir("demo")
+    before = {f: (d / f).read_bytes() for f in ("report_nfl.json", "predictions_nfl.parquet", "split_nfl.json", "journal.jsonl")}
+    rep = pipeline.refit_upcoming("demo", "nfl")
+    # backtest et journal existants : octets identiques (le journal n'est qu'étendu)
+    for f in ("report_nfl.json", "predictions_nfl.parquet", "split_nfl.json"):
+        assert (d / f).read_bytes() == before[f]
+    assert (d / "journal.jsonl").read_bytes().startswith(before["journal.jsonl"])
+    # chronologie : entraînement < calibration <= date limite = dernier résultat terminé connu
+    s = Store_games("demo")
+    cutoff = s[s["status"] == "final"]["game_date"].max()
+    assert rep["date_limite_donnees"] == str(cutoff.date()) and rep["split"]["calib_end"] == str(cutoff.date())
+    assert pd.Timestamp(rep["split"]["train_end"]) < cutoff
+    assert rep["version"].startswith("refit-") and rep["a_venir"] == 8
+    up = pd.read_parquet(d / next(f.name for f in d.glob("predictions_nfl_upcoming_*.parquet")))
+    assert len(up) == 8 and (up["status"] == "scheduled").all() and up["home_score"].isna().all()
+    new = [r for r in Journal("demo").read() if r.get("version") == rep["version"]]
+    assert len(new) == 16 and {r["mode"] for r in new} == {"prospective"}
+    old_ids = {r["id"] for r in map(json.loads, before["journal.jsonl"].decode().splitlines())}
+    assert not ({r["id"] for r in new} & old_ids)                                       # nouvelle version identifiable
+    assert pipeline.refit_upcoming("demo", "nfl")["journal"]["ecrit"] == 0              # idempotent
+
+
+def Store_games(origin):
+    s = st.Store(origin)
+    try:
+        return s.games("nfl")
+    finally:
+        s.close()

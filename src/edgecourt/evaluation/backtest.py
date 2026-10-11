@@ -57,7 +57,8 @@ def _rows(model: str, period: str, P, Y) -> dict:
 
 
 def evaluate(sport: str, origin: str, games: pd.DataFrame, preds: pd.DataFrame, split: dict, fit_info: dict,
-             market_fair: pd.DataFrame | None = None) -> tuple[pd.DataFrame, dict]:
+             market_fair: pd.DataFrame | None = None, tag: str = "",
+             meta: dict | None = None) -> tuple[pd.DataFrame, dict]:
     """Retourne (prévisions annotées, rapport). `preds` = sortie de walk_forward (matchs > train_end)."""
     te, ce = pd.Timestamp(split["train_end"]), pd.Timestamp(split["calib_end"])
     p = preds.copy()
@@ -145,12 +146,14 @@ def evaluate(sport: str, origin: str, games: pd.DataFrame, preds: pd.DataFrame, 
         "reference_marche": mref,
         "avertissement": "Aucun avantage durable n'est démontré. Résultats rétrospectifs, simulation uniquement.",
     }
+    if meta:
+        report.update(meta)
     if origin == "demo":
         report["etiquette"] = "DÉMONSTRATION SYNTHÉTIQUE - aucune valeur sportive"
-    (config.origin_dir(origin) / f"report_{sport}.json").write_text(json.dumps(report, indent=2, ensure_ascii=False, default=float), encoding="utf-8")
+    (config.origin_dir(origin) / f"report_{sport}{tag}.json").write_text(json.dumps(report, indent=2, ensure_ascii=False, default=float), encoding="utf-8")
     with (config.origin_dir(origin) / "configs_tried.jsonl").open("a", encoding="utf-8") as fh:
         for c in cfg_tried:
-            fh.write(json.dumps({"at": report["generated_at"], "sport": sport, "origine": origin, **c}, ensure_ascii=False) + "\n")
+            fh.write(json.dumps({"at": report["generated_at"], "sport": sport, "origine": origin, **({"version": meta["version"]} if meta else {}), **c}, ensure_ascii=False) + "\n")
     return p, report
 
 

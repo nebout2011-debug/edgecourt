@@ -146,5 +146,7 @@ def walk_forward(games: pd.DataFrame, sport: str, train_end) -> tuple[pd.DataFra
             if r.status == "final":
                 state.update(r)
                 fp.update(f"{r.game_id}|{r.home_score}|{r.away_score};".encode())
+            else:
+                state.note_scheduled(r)
     info = fit.info if fit else {"raison": "aucun match après train_end"}
     return pd.DataFrame(out), info

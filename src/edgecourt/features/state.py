@@ -28,6 +28,7 @@ class SportState:
         self.elo = {k: defaultdict(lambda: 1500.0) for k in config.ELO_K_GRID}
         self.team_season: dict[str, str] = {}
         self.last_date: dict = {}
+        self.sched_last: dict = {}  # dernier match PLANIFIÉ connu (calendrier public), sans résultat
         self.margins = defaultdict(lambda: deque(maxlen=config.FORM_WINDOW))
         self.totals = defaultdict(lambda: deque(maxlen=TOTAL_WINDOW))
         self.gf, self.ga, self.n = defaultdict(float), defaultdict(float), defaultdict(int)
@@ -69,9 +70,13 @@ class SportState:
         f["elo_h"], f["elo_a"] = self._elo(ELO_MAIN, h, s), self._elo(ELO_MAIN, a, s)
 
         def rest(t):
-            if t not in self.last_date:
+            prev = self.last_date.get(t)
+            nxt = self.sched_last.get(t)  # le calendrier est connu à l'avance ; seuls les RÉSULTATS ne le sont pas
+            if nxt is not None and (prev is None or nxt > prev):
+                prev = nxt
+            if prev is None:
                 return 7
-            return min((row.game_date - self.last_date[t]).days, config.REST_CAP)
+            return min((row.game_date - prev).days, config.REST_CAP)
 
         f["rest_h"], f["rest_a"] = rest(h), rest(a)
         f["rest_diff"] = f["rest_h"] - f["rest_a"]
@@ -104,6 +109,10 @@ class SportState:
             f["lam_h0"], f["lam_a0"] = lg["mu_home"], lg["mu_away"]
         f.update({f"lg_{k}": v for k, v in lg.items()})
         return f
+
+    def note_scheduled(self, row) -> None:
+        """Enregistre un match planifié (date seulement) pour le calcul du repos ; n'altère ni Elo ni forme."""
+        self.sched_last[row.home_team] = self.sched_last[row.away_team] = row.game_date
 
     def update(self, row) -> None:
         h, a, s = row.home_team, row.away_team, str(row.season)

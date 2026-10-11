@@ -1,4 +1,4 @@
-# MASTER_HANDOFF — EDGECOURT (mis à jour le 2026-10-11, fin du bloc 1)
+# MASTER_HANDOFF — EDGECOURT (mis à jour le 2026-10-11, fin du bloc 2)
 
 ## Décisions
 - Python 3.11 (uv) dans `.venv`, dépendances figées (`requirements.txt`). Serveur Streamlit sur 127.0.0.1:8501.
@@ -21,6 +21,16 @@
 - **Vérification réelle** : application démarrée et inspectée dans Chrome (Matchs NFL réel, Validation NFL réel, Données, Simulation en mode démo). Onglet « Analyse d'un match », filtres date/équipe et upload CSV **non** inspectés visuellement.
 - Commit local : voir `git log` (aucun dépôt distant).
 
+## Bloc 2 — modèle NFL actualisé pour les matchs à venir (2026-10-11)
+- Commande : `.\.venv\Scripts\python.exe -m edgecourt.cli refit --origin real --sport nfl` (après `fetch`). Données re-téléchargées : 4 635 lignes, aucun changement depuis le premier import.
+- **Version : `refit-2026-10-08-78d0d6ba24a9`** ; date limite des données **2026-10-08** (dernier résultat terminé connu, 4 428 matchs). Aucun résultat futur utilisé.
+- Chronologie : entraînement ≤ 2022-10-23 (3 331 matchs) → calibration/sélection 2022-10-24 … 2026-10-08 (1 097 matchs, Platt calibré). Modèle retenu sur validation : logit (log loss validation 0,641 ; Elo20 0,656 ; référence 0,700). **Pas de test final pour cette version** : l'évaluation de référence reste celle du backtest.
+- Séparation : le backtest (`report_nfl.json`, `predictions_nfl.parquet`, `split_nfl.json`, figé au 2019-12-29) est **inchangé octet pour octet** (empreintes SHA-256 vérifiées avant/après). La nouvelle version écrit `*_nfl_upcoming_20261008_78d0d6ba24a9.*`.
+- Journal : 415 lignes **ajoutées** (207 × 2 marchés + configuration), mode `prospective`, champ `version` ; le préfixe existant (4 021 131 octets) est identique ; les anciennes prévisions prospectives du backtest restent en place, ids différents.
+- Repos et forme (corrigé) : le repos d'un match planifié se calcule depuis le **calendrier connu** (match planifié précédent de l'équipe) et non plus depuis le dernier résultat (qui donnait 14 j plafonnés pour un match lointain). La forme n'utilise que des résultats terminés. Test dédié (`test_rest_and_form_use_only_currently_known_information`). Limite : la forme et Elo des matchs lointains n'intègrent pas les matchs intermédiaires, encore inconnus.
+- UI : date limite, version, calibration et nombre de prévisions affichés ; badges « PRÉVISION À VENIR » (version) vs « BACKTEST » ; l'onglet Analyse sélectionne par défaut le prochain match à venir (ATL – BAL, 2026-10-11). Vérifié dans Chrome (Matchs et Analyse, NFL réel).
+- Non fait / hors périmètre : cotes pour les matchs à venir (aucune) ; le backtest `run` régénère encore ses propres lignes « à venir » (jamais affichées comme version actuelle).
+
 ## Données réelles (au 2026-10-11)
 - NFL : 4 635 lignes (4 428 terminés, 207 à venir). Test final 874 matchs : log loss logit calibré 0,640 vs référence simple 0,696 (écart −0,056, IC95 par semaines [−0,076 ; −0,036]) → « écart favorable vs référence simple, marché non battu ni comparé ». Total : −0,013 vs référence. Ne démontre **aucun** avantage économique.
 - Soccer : 380 matchs ; 69 prévisions de test → **preuves insuffisantes**. Modèle choisi sur validation : Poisson, non calibré (n = 83).
@@ -28,7 +38,7 @@
 - Aucune cote réelle : aucun EV/ROI réel. La simulation chiffrée existe **uniquement** en démo avec cotes *fixtures* (teste règlements, ne prouve rien).
 
 ## Limites connues
-- Prévisions prospectives NFL (207) produites par le modèle figé à fin d'entraînement (2019) + état Elo à jour ; réentraînement explicite non automatisé.
+- Le réentraînement est une commande explicite (`refit`), jamais automatique ; à relancer après chaque import de nouveaux résultats.
 - Évaluation total/handicap sur une ligne de référence fixée sur l'entraînement (.5), pas sur les lignes réelles du marché.
 - Retrait de marge proportionnel (biais favori/outsider ignoré). Pas de CLV. Quarts de points / handicaps asiatiques refusés.
 - Générateur synthétique : forces redessinées chaque saison (Elo inter-saisons peu pertinent en démo).

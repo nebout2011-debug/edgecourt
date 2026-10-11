@@ -96,7 +96,8 @@ def build_demo() -> dict:
     return res
 
 
-def _entries(sport: str, origin: str, ann: pd.DataFrame, sim: pd.DataFrame, cfg: dict, cfg_h: str, ref_line: float):
+def _entries(sport: str, origin: str, ann: pd.DataFrame, sim: pd.DataFrame, cfg: dict, cfg_h: str, ref_line: float,
+             version: str | None = None):
     recs = [{"kind": "config", "id": make_id("config", cfg_h), "config_hash": cfg_h, "config": cfg}]
     now = st.now_utc().isoformat(timespec="seconds")
     wm = "1x2" if sport == "soccer" else "moneyline"
@@ -112,7 +113,7 @@ def _entries(sport: str, origin: str, ann: pd.DataFrame, sim: pd.DataFrame, cfg:
         base = {"kind": "prediction", "mode": mode, "origine": origin, "sport": sport, "game_id": r.game_id,
                 "event": f"{r.home_team} - {r.away_team}", "game_date": str(r.game_date.date()), "created_at": now,
                 "cutoff": cutoff, "config_hash": cfg_h, "data_fp": r.data_fp,
-                "demo": origin == "demo"}
+                "demo": origin == "demo", **({"version": version} if version else {})}
         d = dist_from_params(json.loads(r.dp_model if r.total_dist_selected == "model" else r.dp_base))
         winner = (r.p_home_final, r.p_draw_final, r.p_away_final)
         pt = selection_probs("total", "over", ref_line, d, winner, "standard")
@@ -202,3 +203,49 @@ def run_sport(origin: str, sport: str) -> dict:
 
 def run_all(origin: str, sports: list[str] | None = None) -> dict:
     return {sp: run_sport(origin, sp) for sp in (sports or config.SPORTS)}
+
+
+def refit_upcoming(origin: str, sport: str) -> dict:
+    """Nouvelle version du modèle pour les matchs à venir, ajustée avec les seuls résultats terminés connus.
+
+    Chronologie : entraînement (75 % des matchs terminés) < calibration/sélection (le reste, jusqu'à la date limite).
+    Aucun résultat futur ; le backtest existant (fichiers `*_<sport>.*`) n'est ni lu ni modifié ; le journal n'est qu'étendu.
+    """
+    s = st.Store(origin)
+    try:
+        games, odds_all = s.games(sport), s.odds(sport)
+    finally:
+        s.close()
+    fin = games[games["status"] == "final"]
+    if len(fin) < MIN_FINALS:
+        return {"sport": sport, "origin": origin, "statut": "données insuffisantes", "detail": f"{len(fin)} matchs finaux"}
+    cutoff = fin["game_date"].max()
+    daily = fin.groupby("game_date").size().sort_index()
+    cum = daily.cumsum() / daily.sum()
+    train_end = cum.index[int(cum.to_numpy().__ge__(0.75).argmax())]
+    split = {"train_end": str(train_end.date()), "calib_end": str(cutoff.date()), "n_final": int(len(fin)), "kind": "refit"}
+    base = {"kind": "refit", "sport": sport, "data_cutoff": str(cutoff.date()), **split, "elo": config.ELO[sport],
+            "k_grid": list(config.ELO_K_GRID), "poisson_k": config.POISSON_SHRINK_K, "horizon_hours": config.HORIZON_HOURS}
+    vh = config_hash(base)
+    version = f"refit-{cutoff:%Y-%m-%d}-{vh}"
+    tag = f"_upcoming_{cutoff:%Y%m%d}_{vh}"
+    preds, fit_info = walk_forward(games, sport, train_end)
+    dates = dict(zip(games["game_id"].astype(str), games["game_date"]))
+    adm, refused = oddsmod.admissible(odds_all, dates) if len(odds_all) else (odds_all, 0)
+    meta = {"version": version, "type": "prevision_a_venir", "date_limite_donnees": str(cutoff.date()),
+            "resultats_termines_utilises": int(len(fin))}
+    ann, rep = evaluate(sport, origin, games, preds, split, fit_info, market_fair=None, tag=tag, meta=meta)
+    up = ann[ann["status"] != "final"].reset_index(drop=True)
+    sim = simulate(up, adm) if len(adm) and len(up) else pd.DataFrame()
+    cfg = {**base, "version": version, "winner": rep["modele_vainqueur_selectionne_sur_validation"],
+           "total": rep["modele_total_selectionne_sur_validation"], "ev_threshold": config.EV_THRESHOLD}
+    ch = config_hash(cfg)
+    j = Journal(origin)
+    rep["config_hash"] = ch
+    rep["journal"] = {"ecrit": j.append_many(_entries(sport, origin, up, sim, cfg, ch, rep["total"]["ligne"], version)),
+                      "chaine_valide": j.verify()}
+    rep["a_venir"] = int(len(up))
+    up.to_parquet(config.origin_dir(origin) / f"predictions_{sport}{tag}.parquet", index=False)
+    (config.origin_dir(origin) / f"report_{sport}{tag}.json").write_text(
+        json.dumps(rep, indent=2, ensure_ascii=False, default=float), encoding="utf-8")
+    return rep

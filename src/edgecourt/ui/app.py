@@ -35,6 +35,7 @@ CSS = """
 .ec-p {font-variant-numeric:tabular-nums; font-size:.85rem; color:#26332e;}
 .ec-badge {display:inline-block; padding:2px 8px; border-radius:999px; font-size:.75rem; background:#e9eeec; color:#26332e;}
 .ec-bt {background:#e8eefc; color:#1b3a8a;}
+.ec-fut {background:#d9f2e6; color:#0b4d36; font-weight:700;}
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -96,6 +97,25 @@ if origin == "demo":
 st.caption("Aucun avantage prédictif ni taux de réussite n'est démontré. Les résultats affichés sont rétrospectifs.")
 
 P, R, S = preds(origin, sport), report(origin, sport), sim(origin, sport)
+
+
+def upcoming(o: str, sp: str):
+    """Dernière version « à venir » (modèle actualisé), séparée du backtest. Repli : lignes à venir du backtest."""
+    d = config.origin_dir(o)
+    files = sorted(d.glob(f"predictions_{sp}_upcoming_*.parquet"), key=lambda f: (f.name, f.stat().st_mtime))
+    if files:
+        rp = d / files[-1].name.replace("predictions_", "report_").replace(".parquet", ".json")
+        return _parquet(str(files[-1]), _mt(files[-1])), (_json(str(rp), _mt(rp)) if rp.exists() else None)
+    return None, None
+
+
+U, UR = upcoming(origin, sport)
+if U is None and P is not None:
+    U = P[P["status"] != "final"].reset_index(drop=True)  # modèle du backtest, non actualisé
+if UR:
+    UP_LABEL = f"version {UR['version']} · données jusqu'au {UR['date_limite_donnees']}"
+else:
+    UP_LABEL = "modèle du backtest (non actualisé)"
 WM = "1X2 (temps réglementaire)" if sport == "soccer" else "Vainqueur (prolongations incluses)"
 tab_m, tab_a, tab_v, tab_s, tab_d = st.tabs(["Matchs", "Analyse d'un match", "Validation", "Simulation", "Données"])
 
@@ -128,7 +148,7 @@ with tab_m:
         today = pd.Timestamp.today().normalize()
         f1, f2, f3 = st.columns(3)
         market = f1.selectbox("Marché", [WM, f"Total (ligne {R['total']['ligne']})"])
-        lo, hi = P["game_date"].min().date(), P["game_date"].max().date()
+        lo, hi = min(P["game_date"].min(), U["game_date"].min() if len(U) else P["game_date"].min()).date(),             max(P["game_date"].max(), U["game_date"].max() if len(U) else P["game_date"].max()).date()
         rng = f2.date_input("Période", value=(max(lo, (today - pd.Timedelta(days=30)).date()) if origin == "real" else hi - pd.Timedelta(days=60), hi),
                             min_value=lo, max_value=hi)
         team = f3.text_input("Équipe contient")
@@ -136,13 +156,20 @@ with tab_m:
         view = P[(P["game_date"].dt.date >= d0) & (P["game_date"].dt.date <= d1)]
         if team:
             view = view[view["home_team"].str.contains(team, case=False) | view["away_team"].str.contains(team, case=False)]
-        up = view[(view["status"] != "final") & (view["game_date"] >= today)] if origin == "real" else view.iloc[0:0]
+        uview = U[(U["game_date"].dt.date >= d0) & (U["game_date"].dt.date <= d1)]
+        if team:
+            uview = uview[uview["home_team"].str.contains(team, case=False) | uview["away_team"].str.contains(team, case=False)]
+        up = uview[uview["game_date"] >= today] if origin == "real" else uview.iloc[0:0]
+        last_final = P[P["status"] == "final"]["game_date"].max()
         k1, k2, k3, k4 = st.columns(4)
-        k1.metric("Matchs en base", int(R["split"]["n_final"]) if R and "split" in R else 0)
-        k2.metric("Dernier match connu", str(P[P["status"] == "final"]["game_date"].max().date()) if (P["status"] == "final").any() else "—")
-        k3.metric("Prévisions à venir", int((P["status"] != "final").sum()))
-        k4.metric("Calibration", "oui" if bool(P["calibrated"].iloc[0]) else "non")
-        st.subheader("À venir")
+        k1.metric("Matchs terminés en base", int(UR["resultats_termines_utilises"]) if UR else (int(R["split"]["n_final"]) if R and "split" in R else 0))
+        k2.metric("Date limite des données", UR["date_limite_donnees"] if UR else (str(last_final.date()) if pd.notna(last_final) else "—"))
+        k3.metric("Version du modèle (à venir)", UR["version"] if UR else "backtest")
+        k4.metric("Prévisions à venir", int((U["game_date"] >= today).sum()) if origin == "real" else 0)
+        st.caption(f"À venir : {UR['calibration'] if UR else 'non actualisé'} · Backtest : {R['calibration']} "
+                   f"(modèle figé au {R['split']['train_end']}, évalué sur des matchs terminés).")
+        st.subheader("Prévisions à venir")
+        st.markdown(f'<span class="ec-badge ec-fut">PRÉVISION À VENIR</span> <span class="ec-note">{UP_LABEL}</span>', unsafe_allow_html=True)
         if up.empty:
             st.info("Aucune rencontre à venir dans les données pour ces filtres. Un historique n'est jamais affiché comme match à venir.")
         else:
@@ -160,7 +187,7 @@ with tab_m:
                             f'<div><b>{r.home_team}</b> – {r.away_team}<br><span class="ec-note">{r.decision} · {r.raison}</span></div>'
                             f'<div>{bar}</div><div class="ec-p">{pp}<br>cote : {r.cote}</div></div>', unsafe_allow_html=True)
             st.caption("Barres : domicile · nul · extérieur. Cotes absentes = « rendement non évaluable ».")
-        st.subheader("Historique des prévisions")
+        st.subheader("Backtests (matchs terminés)")
         st.markdown('<span class="ec-badge ec-bt">BACKTEST</span> <span class="ec-note">prévisions reconstruites avec les seules données '
                     'antérieures à chaque match ; ce ne sont pas des prévisions prospectives.</span>', unsafe_allow_html=True)
         hist = decision_table(view[view["status"] == "final"].sort_values("game_date", ascending=False).head(300))
@@ -179,11 +206,18 @@ with tab_a:
     if P is None:
         st.info("Pas de prévisions disponibles.")
     else:
-        lab = P.sort_values("game_date", ascending=False).head(400)
-        opts = {f"{r.game_date.date()} · {r.home_team} – {r.away_team} [{ {'a_venir': 'à venir', 'test': 'backtest/test', 'calibration': 'backtest/calibration'}[r.segment] }]": i
-                for i, r in lab.iterrows()}
-        g = P.loc[opts[st.selectbox("Match", list(opts))]]
+        today_a = pd.Timestamp.today().normalize()
+        nxt = U[U["game_date"] >= today_a].sort_values(["game_date", "game_id"]) if origin == "real" else U.iloc[0:0]
+        opts = {f"{r.game_date.date()} · {r.home_team} – {r.away_team} [À VENIR]": ("U", i) for i, r in nxt.iterrows()}  # le 1er = prochain match
+        lab = P[P["status"] == "final"].sort_values("game_date", ascending=False).head(400)
+        opts.update({f"{r.game_date.date()} · {r.home_team} – {r.away_team} [BACKTEST]": ("P", i) for i, r in lab.iterrows()})
+        src, idx = opts[st.selectbox("Match (le prochain match à venir est sélectionné par défaut)", list(opts))]
+        g = (U if src == "U" else P).loc[idx]
         st.subheader(f"{g['home_team']} – {g['away_team']}")
+        if src == "U":
+            st.markdown(f'<span class="ec-badge ec-fut">PRÉVISION À VENIR</span> <span class="ec-note">{UP_LABEL}</span>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<span class="ec-badge ec-bt">BACKTEST</span> <span class="ec-note">modèle du backtest, figé au {R["split"]["train_end"]}</span>', unsafe_allow_html=True)
         st.caption(f"{fr_date(g['game_date'])} · empreinte des données avant le match : {g['data_fp']} · modèle : {g['model_selected']}"
                    f"{' (calibré)' if g['calibrated'] else ' (non calibré)'}")
         cols = st.columns(3)

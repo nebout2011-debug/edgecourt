@@ -260,3 +260,25 @@ def test_scheduled_games_get_forecast_without_updating_state(nfl_small):
     preds, _ = walk_forward(g, "nfl", g["game_date"].iloc[len(g) // 2])
     r = preds[preds["game_id"] == g.loc[last, "game_id"]].iloc[0]
     assert r["status"] == "scheduled" and np.isnan(r["home_score"]) and abs(r["w_elo20_h"] + r["w_elo20_d"] + r["w_elo20_a"] - 1) < 1e-9
+
+
+def test_rest_and_form_use_only_currently_known_information(nfl_small):
+    """Repos : calendrier connu (matchs planifiés). Forme : seulement des résultats terminés."""
+    g = nfl_small.copy()
+    g[["home_score", "away_score"]] = g[["home_score", "away_score"]].astype(float)
+    d1, d2, d3 = sorted(g["game_date"].unique())[-3:]
+    g.loc[g["game_date"].isin([d2, d3]), ["home_score", "away_score"]] = np.nan
+    g.loc[g["game_date"].isin([d2, d3]), "status"] = "scheduled"
+    preds, _ = walk_forward(g, "nfl", g["game_date"].iloc[len(g) // 2])
+    last = g[g["game_date"] == d3].iloc[0]
+    team = last["home_team"]
+    row3 = preds[(preds["game_id"] == last["game_id"])].iloc[0]
+    row2 = preds[(preds["game_date"] == d2) & ((preds["home_team"] == team) | (preds["away_team"] == team))].iloc[0]
+    side = lambda r: "h" if r["home_team"] == team else "a"  # noqa: E731
+    gap = (pd.Timestamp(d3) - pd.Timestamp(d2)).days
+    assert row3[f"rest_{side(row3)}"] == min(gap, config.REST_CAP)                  # 7 j depuis le match PLANIFIÉ connu, pas 14
+    assert row2[f"rest_{side(row2)}"] == min((pd.Timestamp(d2) - pd.Timestamp(d1)).days, config.REST_CAP)
+    fin = g[(g["status"] == "final") & ((g["home_team"] == team) | (g["away_team"] == team))].sort_values("game_date")
+    m = [(r.home_score - r.away_score) * (1 if r.home_team == team else -1) for r in fin.itertuples()][-config.FORM_WINDOW:]
+    expected = sum(m) / (len(m) + 3)                                                # SHRINK = 3, uniquement résultats terminés
+    assert row3[f"form_{side(row3)}"] == pytest.approx(expected) and row2[f"form_{side(row2)}"] == pytest.approx(expected)
