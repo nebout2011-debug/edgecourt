@@ -16,7 +16,7 @@
 - Cotes : validation CSV, jointure temporelle stricte (cotes postérieures refusées et comptées), jointures ambiguës et lignes incompatibles refusées, retrait de marge proportionnel (même bookmaker/instant/ligne). Sans cotes : « rendement non évaluable ».
 - Journal append-only chaîné (`journal.jsonl`) : config, prediction (backtest | prospective), result, settlement ; relecture idempotente, altération détectée.
 - Rapport par sport : effectifs, Brier/log loss, calibration avec effectifs, IC par blocs de semaines ISO, configurations essayées (`configs_tried.jsonl`).
-- UI (Streamlit) : Matchs, Analyse, Validation (réel et démo séparés), Simulation, Données (import CSV, statut connecteurs, licences).
+- UI (Streamlit) : 8 écrans depuis le bloc 3 (voir plus bas) + Simulation et Données (import CSV, statut connecteurs, licences).
 - **Tests : 24 passés** (`.\scripts\test.ps1`, ≈ 50 s) : absence de fuite (propre score, même jour), invariance d'une prévision passée après ajout de résultats futurs, imports idempotents, sommes de probabilités, nuls/remboursements, refus des cotes futures, journal persistant, séparation démo/réel, parcours complet. Mutation vérifiée : une fuite injectée volontairement fait échouer le test.
 - **Vérification réelle** : application démarrée et inspectée dans Chrome (Matchs NFL réel, Validation NFL réel, Données, Simulation en mode démo). Onglet « Analyse d'un match », filtres date/équipe et upload CSV **non** inspectés visuellement.
 - Commit local : voir `git log` (aucun dépôt distant).
@@ -30,6 +30,19 @@
 - Repos et forme (corrigé) : le repos d'un match planifié se calcule depuis le **calendrier connu** (match planifié précédent de l'équipe) et non plus depuis le dernier résultat (qui donnait 14 j plafonnés pour un match lointain). La forme n'utilise que des résultats terminés. Test dédié (`test_rest_and_form_use_only_currently_known_information`). Limite : la forme et Elo des matchs lointains n'intègrent pas les matchs intermédiaires, encore inconnus.
 - UI : date limite, version, calibration et nombre de prévisions affichés ; badges « PRÉVISION À VENIR » (version) vs « BACKTEST » ; l'onglet Analyse sélectionne par défaut le prochain match à venir (ATL – BAL, 2026-10-11). Vérifié dans Chrome (Matchs et Analyse, NFL réel).
 - Non fait / hors périmètre : cotes pour les matchs à venir (aucune) ; le backtest `run` régénère encore ses propres lignes « à venir » (jamais affichées comme version actuelle).
+
+## Bloc 3 — UI « Terminal + Premium », 8 écrans (2026-11-12, UI seule, moteur non touché)
+Fichiers modifiés : `src/edgecourt/ui/app.py` (réécrit), `.streamlit/config.toml` (thème `base = "light"`, fond `#fbfbf8`).
+- Navigation `st.navigation(position="hidden")` + liens maison sous le bandeau : Aujourd'hui (`/aujourdhui`, défaut), Détail d'un match (`/match`),
+  La preuve (`/preuve`, ex-Validation), Ligues, En direct, La toile, Fiche joueur, Fiche équipe ; « Simulation » et « Données » conservés à la fin (comportement existant).
+- Bandeau fondateur ambre `#fff3cd`, texte exact, sans bouton de fermeture, en tête de chaque écran. Logo = texte « EDGECOURT ».
+- Publicités (cadres gris pointillés « Publicité ») : Aujourd'hui 728×90 sous l'en-tête + 300×250 après le 3e groupe de ligues + colonne droite collante 300×600 (masquée < 900 px) ;
+  Ligues 728×90 après la 3e (et 6e si elle existe) carte ; Preuve 468×60 tout en bas ; Direct et Toile 728×90 en bas ; Match / Joueur / Équipe : aucune.
+- Données d'exemple étiquetées : Fiche joueur (aucune donnée joueur dans le moteur), carte « En direct » (prévision démo, équipes fictives), et tout le mode démo.
+- La toile = réseau des équipes de la dernière saison (traits = rencontres, taille = Elo) — interprétation, à confirmer.
+**Vérifié** (2026-11-12) : 24 tests passés ; app sur http://127.0.0.1:8501 ; chaque écran ouvert dans le navigateur intégré (bandeau présent, aucune exception,
+publicités aux bons endroits et absentes des 3 fiches) ; bouton « Détail → » ouvre le bon match ; bascule réel/démo conservée entre écrans ; mobile 375 px sans défilement horizontal.
+**Non vérifié** : aucune maquette fournie sur disque (construit d'après la description écrite) ; rendu visuel fin des graphiques en mobile.
 
 ## Données réelles (au 2026-10-11)
 - NFL : 4 635 lignes (4 428 terminés, 207 à venir). Test final 874 matchs : log loss logit calibré 0,640 vs référence simple 0,696 (écart −0,056, IC95 par semaines [−0,076 ; −0,036]) → « écart favorable vs référence simple, marché non battu ni comparé ». Total : −0,013 vs référence. Ne démontre **aucun** avantage économique.
