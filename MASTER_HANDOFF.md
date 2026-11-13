@@ -163,6 +163,12 @@ publicités aux bons endroits et absentes des 3 fiches) ; bouton « Détail → 
 - **Pied de page** (toutes les pages, rendu après `nav.run()`) : logo + devise, avertissement (texte fourni), liens
   `FOOTER_LINKS` vers des pages existantes (La preuve, Journal — en ligne depuis 9cb7c6e —, Lexique, FAQ → Accueil#faq,
   Ligues, Aujourd'hui), « © 2026 EDGECOURT ». Aucune pub. Une colonne sous 700 px. Tests `tests/test_footer.py` (14).
+- **Écran d'entrée** (`page_entry`, page par défaut à `/` ; l'Accueil est désormais `/accueil`) : bandeau fondateur,
+  logo + devise + comptes, héros de l'Accueil réutilisé (`home_hero`) avec la vraie prochaine prévision (`featured_card`)
+  et « Gratuit et ouvert — sans inscription », gros bouton vert « Entrer dans l'app » → `st.session_state["entered"]` +
+  Accueil, bandeau « 5 modèles, un appel EDGECOURT » (`models_strip`). Pas de barre des sports, pas de liens de pages,
+  barre latérale masquée, pas de pied de page, aucune pub. Les liens internes visent des pages nommées : seul `/` montre
+  l'écran d'entrée (nouvelle session = il revient). Tests `tests/test_entry.py` (5) ; `test_home.py` vise `/accueil`.
 - **Déploiement Streamlit Cloud** : `app.py` ajoute `src/` à `sys.path` (le paquet n'y est pas installé). Données lues par
   l'app (≈ 8 Mo : predictions/report/simulation/split/configs_tried, connector_status, 2 DuckDB) suivies par git via
   `.gitignore` ; brut, journaux, `.env`, secrets restent ignorés. Rafraîchir les données = local puis commit + push.

@@ -291,6 +291,11 @@ a.ec-mini:hover, a.ec-mini:focus-visible {border-color:#00C853;}
 .ec-footer-links a:hover, .ec-footer-links a:focus-visible {text-decoration:underline; text-decoration-color:#00C853; text-underline-offset:3px;}
 .ec-footer-copy {margin-top:22px; padding-top:12px; border-top:1px solid var(--line); font-family:var(--mono); font-size:.75rem; color:var(--muted);}
 @media (max-width: 700px) {.ec-footer-grid {grid-template-columns:1fr; gap:16px;} .ec-footer-links {flex-direction:row; flex-wrap:wrap; gap:8px 16px;}}
+.st-key-ec_enter {align-items:center; margin:28px 0 36px;}
+.st-key-ec_enter button {font-size:1.2rem; font-weight:700; padding:16px 44px; min-height:58px; border-radius:10px;
+                         background:#00C853; border:1px solid #00C853; color:#0d0f0e;}
+.st-key-ec_enter button:hover, .st-key-ec_enter button:focus-visible {background:#00b34a; border-color:#0B6E4F; color:#0d0f0e;}
+.st-key-ec_enter button p {font-size:1.2rem; font-weight:700;}
 .ec-def {margin:0; font-size:1rem; line-height:1.6; color:var(--ink);}
 .ec-board-h {font-family:var(--mono); font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
              border-top:2px solid var(--ink); padding-top:8px; margin:8px 0 4px;}
@@ -1603,30 +1608,58 @@ def accounts_dialog():
         st.switch_page(PAGES["today"])
 
 
+NO_NEXT = ('<div class="ec-feat"><div class="t">Aucune prévision à venir</div>'
+           '<p class="note">Les prochaines prévisions apparaîtront ici dès que le moteur en publiera.</p></div>')
+
+
+def home_hero(side: str, free: str) -> str:
+    """Héros sombre 2 colonnes de l'Accueil (titre, texte, badges « Bientôt »), partagé avec l'écran d'entrée."""
+    badges = "".join(f'<span class="ec-badge" aria-disabled="true">{s}<small>Bientôt</small></span>' for s in ("App Store", "Google Play"))
+    return ('<section class="ec-hero ec-home"><div class="ec-home-grid"><div>'
+            '<div class="h" role="heading" aria-level="1">Ton prochain match, <span class="g">déjà analysé.</span></div>'
+            "<p>Des prédictions IA pour le foot, la NBA et la NFL. Des heures d'analyse, lues en quelques secondes — "
+            "et chaque résultat noté en public.</p>"
+            f'<div class="ec-badges">{badges}</div><p class="free">{free}</p></div>'
+            f"<div>{side}</div></div></section>")
+
+
+def models_strip(title: str) -> str:
+    """Bandeau défilant des 5 modèles + lien « À propos des modèles → » (La preuve)."""
+    pills = "".join(f'<span class="ec-pill">{m}</span>' for m in STRIP_MODELS)
+    return (f'<div class="ec-models-head"><b>{title}</b>' + a(url("preuve"), "À propos des modèles →") + "</div>"
+            '<div class="ec-strip" aria-label="Modèles du moteur"><div class="ec-strip-track">'
+            f'<div class="ec-strip-set">{pills * 2}</div><div class="ec-strip-set" aria-hidden="true">{pills * 2}</div></div></div>')
+
+
 def page_home():
     """Écran d'arrivée : promesse, prochaine prévision réelle avec le vote des 5 modèles, modèles, FAQ."""
     nxt = next_predictions()
     side = (featured_card(*nxt[0]) + '<div class="ec-minis">' + "".join(mini_card(*x) for x in nxt[1:]) + "</div>"
-            if nxt else '<div class="ec-feat"><div class="t">Aucune prévision à venir</div>'
-                        '<p class="note">Les prochaines prévisions apparaîtront ici dès que le moteur en publiera.</p></div>')
-    badges = "".join(f'<span class="ec-badge" aria-disabled="true">{s}<small>Bientôt</small></span>' for s in ("App Store", "Google Play"))
-    html('<section class="ec-hero ec-home"><div class="ec-home-grid"><div>'
-         '<div class="h" role="heading" aria-level="1">Ton prochain match, <span class="g">déjà analysé.</span></div>'
-         "<p>Des prédictions IA pour le foot, la NBA et la NFL. Des heures d'analyse, lues en quelques secondes — "
-         "et chaque résultat noté en public.</p>"
-         f'<div class="ec-badges">{badges}</div><p class="free">Gratuit · sans inscription pour l\'instant</p></div>'
-         f"<div>{side}</div></div></section>")
-    pills = "".join(f'<span class="ec-pill">{m}</span>' for m in STRIP_MODELS)
-    html('<div class="ec-models-head"><b>5 modèles, une seule prédiction</b>' + a(url("preuve"), "À propos des modèles →") + "</div>"
-         '<div class="ec-strip" aria-label="Modèles du moteur"><div class="ec-strip-track">'
-         f'<div class="ec-strip-set">{pills * 2}</div><div class="ec-strip-set" aria-hidden="true">{pills * 2}</div></div></div>')
+            if nxt else NO_NEXT)
+    html(home_hero(side, "Gratuit · sans inscription pour l'instant"))
+    html(models_strip("5 modèles, une seule prédiction"))
     html('<section id="faq" class="ec-faq"><div class="ec-h2">Questions fréquentes</div>'
          + "".join(f"<details><summary>{q}</summary><p>{r}</p></details>" for q, r in FAQ) + "</section>")
 
 
+def page_entry():
+    """Écran d'entrée (première impression, page par défaut) : sans nav ni barre latérale. Même héros et même carte de
+    prévision réelle que l'Accueil, bouton « Entrer dans l'app ». Une fois entré, la session ne le revoit plus."""
+    if st.session_state.get("entered"):
+        st.switch_page(PAGES["home"])
+    nxt = next_predictions(1)
+    html(home_hero(featured_card(*nxt[0]) if nxt else NO_NEXT, "Gratuit et ouvert — sans inscription"))
+    with st.container(key="ec_enter"):
+        if st.button("Entrer dans l'app", type="primary", key="enter_app"):
+            st.session_state["entered"] = True
+            st.switch_page(PAGES["home"])
+    html(models_strip("5 modèles, un appel EDGECOURT"))
+
+
 # ================================================================= cadre commun
 PAGES = {
-    "home": st.Page(page_home, title="Accueil", url_path="accueil", default=True),
+    "entry": st.Page(page_entry, title="EDGECOURT", url_path="entree", default=True),
+    "home": st.Page(page_home, title="Accueil", url_path="accueil"),
     "today": st.Page(page_today, title="Aujourd'hui", url_path="aujourdhui"),
     "match": st.Page(page_match, title="Détail d'un match", url_path="match"),
     "proof": st.Page(page_proof, title="La preuve", url_path="preuve"),
@@ -1671,35 +1704,40 @@ with n3.container(horizontal=True, gap="small", horizontal_alignment="right"):
         accounts_dialog()
     if st.button("Créer un compte", type="primary"):
         accounts_dialog()
-st.html(sport_bar("accueil" if nav is PAGES["home"] else nav_sport() if nav is PAGES["today"] else None),
-        unsafe_allow_javascript=True)  # JS interne (ouverture/fermeture des menus), aucun contenu externe
-l1, l2 = st.columns([5, 2], vertical_alignment="center")
-with l1.container(horizontal=True, gap="small"):
-    st.page_link(PAGES["today"], label="Prédictions")
-    st.page_link(PAGES["proof"], label="La preuve")
-    st.page_link(PAGES["proof"], label="Modèles")
-    st.page_link(PAGES["proof"], label="Méthodologie")
-    html(f'<a class="ec-faq-link" href="{escape(url("accueil"))}#faq" target="_self">FAQ</a>')
-    st.page_link(PAGES["journal"], label="Journal")
-    st.page_link(PAGES["lexique"], label="Lexique")
-    for k in ("match", "leagues", "live", "web", "player", "team", "sim"):
-        st.page_link(PAGES[k])
-if nav is not PAGES["home"]:  # l'Accueil ne montre que des prévisions réelles
-    with l2:
-        st.radio("Données", ["real", "demo"], key="mode", horizontal=True, label_visibility="collapsed",
-                 format_func=lambda m: "Données réelles" if m == "real" else "Démonstration synthétique")
-st.divider()
+ENTRY = nav is PAGES["entry"]  # écran d'entrée : plein écran, sans nav ni barre latérale ni pied de page
+if ENTRY:
+    html('<style>[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], [data-testid="stExpandSidebarButton"] {display:none !important;}</style>')
+else:
+    st.html(sport_bar("accueil" if nav is PAGES["home"] else nav_sport() if nav is PAGES["today"] else None),
+            unsafe_allow_javascript=True)  # JS interne (ouverture/fermeture des menus), aucun contenu externe
+    l1, l2 = st.columns([5, 2], vertical_alignment="center")
+    with l1.container(horizontal=True, gap="small"):
+        st.page_link(PAGES["today"], label="Prédictions")
+        st.page_link(PAGES["proof"], label="La preuve")
+        st.page_link(PAGES["proof"], label="Modèles")
+        st.page_link(PAGES["proof"], label="Méthodologie")
+        html(f'<a class="ec-faq-link" href="{escape(url("accueil"))}#faq" target="_self">FAQ</a>')
+        st.page_link(PAGES["journal"], label="Journal")
+        st.page_link(PAGES["lexique"], label="Lexique")
+        for k in ("match", "leagues", "live", "web", "player", "team", "sim"):
+            st.page_link(PAGES[k])
+    if nav is not PAGES["home"]:  # l'Accueil ne montre que des prévisions réelles
+        with l2:
+            st.radio("Données", ["real", "demo"], key="mode", horizontal=True, label_visibility="collapsed",
+                     format_func=lambda m: "Données réelles" if m == "real" else "Démonstration synthétique")
+    st.divider()
 nav.run()
 
-# Pied de page (toutes les pages) : logo + devise, avertissement, liens vers des pages existantes, copyright. Aucune pub.
+# Pied de page (toutes les pages de l'app ; pas sur l'écran d'entrée) : logo + devise, avertissement, liens vers des pages existantes, copyright. Aucune pub.
 FOOTER_DISCLAIMER = ("Site de prédiction — pas un site de pari. Nos prédictions sont des conseils et des idées pour vous aider "
                      "à juger — la décision finale vous appartient.")
 FOOTER_LINKS = [("La preuve", "preuve"), ("Journal", "journal"), ("Lexique", "lexique"), ("FAQ", "accueil#faq"),
                 ("Ligues", "ligues"), ("Aujourd'hui", "aujourdhui")]
-html('<footer class="ec-footer" aria-label="Pied de page"><div class="ec-footer-grid">'
-     f'<div class="ec-footer-brand"><img src="{asset_uri("logo-primary.png")}" alt="EDGECOURT"><p>{TAGLINE}</p></div>'
-     f'<p class="ec-footer-disc">{FOOTER_DISCLAIMER}</p>'
-     '<nav class="ec-footer-links" aria-label="Liens du site">'
-     + "".join(f'<a href="{escape(url(p.partition("#")[0]) + "".join(p.partition("#")[1:]))}" target="_self">{lab}</a>'
-               for lab, p in FOOTER_LINKS)
-     + '</nav></div><div class="ec-footer-copy">© 2026 EDGECOURT</div></footer>')
+if not ENTRY:
+    html('<footer class="ec-footer" aria-label="Pied de page"><div class="ec-footer-grid">'
+         f'<div class="ec-footer-brand"><img src="{asset_uri("logo-primary.png")}" alt="EDGECOURT"><p>{TAGLINE}</p></div>'
+         f'<p class="ec-footer-disc">{FOOTER_DISCLAIMER}</p>'
+         '<nav class="ec-footer-links" aria-label="Liens du site">'
+         + "".join(f'<a href="{escape(url(p.partition("#")[0]) + "".join(p.partition("#")[1:]))}" target="_self">{lab}</a>'
+                   for lab, p in FOOTER_LINKS)
+         + '</nav></div><div class="ec-footer-copy">© 2026 EDGECOURT</div></footer>')

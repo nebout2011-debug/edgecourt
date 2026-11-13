@@ -3,20 +3,23 @@ from pathlib import Path
 
 import pytest
 from streamlit.testing.v1 import AppTest
+from streamlit.util import calc_hash
 
 APP = str(Path(__file__).resolve().parents[1] / "src" / "edgecourt" / "ui" / "app.py")
 SOON = "Les comptes arrivent bientôt — l'app est gratuite et ouverte pour l'instant"
 
 
 def home() -> AppTest:
-    return AppTest.from_file(APP, default_timeout=120).run()  # pas de page demandée : la page par défaut doit être l'Accueil
+    at = AppTest.from_file(APP, default_timeout=120)
+    at._page_hash = calc_hash("accueil")  # la page par défaut est désormais l'écran d'entrée (tests/test_entry.py)
+    return at.run()
 
 
 def page_html(at: AppTest) -> str:
     return "".join(m.value for m in at.markdown)
 
 
-def test_home_is_default_and_shows_real_prediction_or_nothing():
+def test_home_shows_real_prediction_or_nothing():
     at = home()
     assert not at.exception
     h = page_html(at)
