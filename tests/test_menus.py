@@ -52,11 +52,12 @@ def test_mega_menu_has_three_columns_and_only_real_pages_are_links():
     mega = block(h, 'id="ec-dd-preuve"', "</nav>")
     assert re.findall(r'class="ec-dd-h">([^<]+)<', mega) == ["La preuve", "Comprendre", "Le site"]
     links = re.findall(r'<a href="([^"]+)" target="_self">([^<]+)</a>', mega)
-    assert [t for _, t in links] == ["La preuve", "Classement des modèles", "Lexique", "Comment ça marche", "FAQ",
+    assert [t for _, t in links] == ["La preuve", "Journal", "Classement des modèles", "Lexique", "Comment ça marche", "FAQ",
                                      "Accueil", "Aujourd'hui", "Ligues", "En direct", "La toile"]
     assert ("accueil#faq", "FAQ") in links
     assert ("lexique", "Lexique") in links
-    for missing in ("Journal", "Équipe de la semaine"):  # pas de page dans l'app : « Bientôt », jamais un lien
+    assert ("journal", "Journal") in links
+    for missing in ("Équipe de la semaine",):  # pas de page dans l'app : « Bientôt », jamais un lien
         assert f'<span class="soon" aria-disabled="true">{missing}<small>Bientôt</small></span>' in mega
     for banned in ("Cotes", "Odds", "Picks", "Sportsbook", "Casino", "Calculat", "Parlay", "pari"):
         assert banned.lower() not in h.lower()

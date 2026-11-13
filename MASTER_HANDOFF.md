@@ -147,6 +147,13 @@ publicités aux bons endroits et absentes des 3 fiches) ; bouton « Détail → 
   Poisson (pas de logit) — affichés tels quels. Au 2026-11-13 : NFL ★ Logit (calibré) 0,640 … Baseline 0,696 (874) ; NBA
   ★ Logit (calibré) 0,609 … Baseline 0,687 (1 320) ; PL ★ Élo 40 0,966, Poisson (publié) 1,001, Baseline 1,067 (69).
   Tests `tests/test_leaderboard.py` (2, dont un sur un rapport modifié).
+- **Journal** (`/journal`, `page_journal`, `journal_rows`) : une ligne par prédiction terminée (`status == "final"`,
+  segments calibration + test) depuis les `predictions_*.parquet` déployés (pas `journal.jsonl`, non déployé) ; prévision =
+  issue la plus probable (`p_*_final`) + proba, résultat = scores, ✅ Juste / ❌ Raté. Plus récent d'abord. `ui.data_table`
+  shadcn (max 1 000 lignes côté composant) → pagination serveur 25 lignes/page (« ← Plus récentes / Plus anciennes → »),
+  filtre `segmented_control` Toutes / NFL / NBA / Premier League ; ligue vide → « Aucune prévision terminée… ». Au
+  2026-11-13 : 4 562 prévisions, 183 pages. Le bouton « Columns » du Data Table est en anglais (texte du composant).
+  Nav : rangée de pages + méga-menu (Journal n'est plus « Bientôt »). Tests `tests/test_journal.py` (5).
 - **Déploiement Streamlit Cloud** : `app.py` ajoute `src/` à `sys.path` (le paquet n'y est pas installé). Données lues par
   l'app (≈ 8 Mo : predictions/report/simulation/split/configs_tried, connector_status, 2 DuckDB) suivies par git via
   `.gitignore` ; brut, journaux, `.env`, secrets restent ignorés. Rafraîchir les données = local puis commit + push.

@@ -417,7 +417,7 @@ def nav_sport() -> str:
 
 SPORT_ICON = {"soccer": "⚽", "nba": "🏀", "nfl": "🏈", "nhl": "🏒", "mlb": "⚾"}
 # Méga-menu « La preuve » : None = pas (encore) de page dans l'app → « Bientôt », non cliquable (aucune page inventée).
-MEGA = [("La preuve", [("La preuve", "preuve"), ("Journal", None), ("Classement des modèles", "preuve"), ("Équipe de la semaine", None)]),
+MEGA = [("La preuve", [("La preuve", "preuve"), ("Journal", "journal"), ("Classement des modèles", "preuve"), ("Équipe de la semaine", None)]),
         ("Comprendre", [("Lexique", "lexique"), ("Comment ça marche", "lexique"), ("FAQ", "accueil#faq")]),
         ("Le site", [("Accueil", "accueil"), ("Aujourd'hui", "aujourdhui"), ("Ligues", "ligues"), ("En direct", "direct"),
                      ("La toile", "toile")])]
@@ -1360,6 +1360,65 @@ def page_lexique():
             html(f'<p class="ec-def">{escape(definition[0].upper() + definition[1:])}</p>')
 
 
+JOURNAL_LEAGUES = {"NFL": "nfl", "NBA": "nba", "Premier League": "soccer"}
+JOURNAL_PAGE = 25  # lignes envoyées au navigateur par page (le Data Table n'en reçoit jamais des milliers)
+NO_JOURNAL = "Aucune prévision terminée pour cette ligue pour l'instant."
+
+
+def fr_pct(x: float) -> str:
+    return f"{100 * x:.1f}".replace(".", ",") + " %"
+
+
+def journal_rows(origin: str = "real") -> pd.DataFrame:
+    """Historique des prévisions sur matchs terminés, depuis les prédictions déployées (parquet), le plus récent d'abord.
+    Prévision = issue la plus probable (p_*_final) ; juste si c'est l'issue réelle (scores)."""
+    rows = []
+    for league, sp in JOURNAL_LEAGUES.items():
+        P = preds(origin, sp)
+        if P is None:
+            continue
+        F = P[P["status"] == "final"].dropna(subset=["home_score", "away_score", *FINAL])
+        for r, probs in zip(F.itertuples(), F[list(FINAL)].to_numpy()):
+            hs, as_ = int(r.home_score), int(r.away_score)
+            top, actual = int(probs.argmax()), (0 if hs > as_ else 1 if hs == as_ else 2)
+            name = (r.home_team, "Nul", r.away_team)
+            rows.append({"id": f"{sp}_{r.game_id}", "date": pd.Timestamp(r.game_date), "league": league,
+                         "match": f"{r.home_team} – {r.away_team}", "pred": f"{name[top]} {fr_pct(probs[top])}",
+                         "result": f"{name[actual]} ({hs}–{as_})", "correct": top == actual})
+    J = pd.DataFrame(rows, columns=["id", "date", "league", "match", "pred", "result", "correct"])
+    return J.sort_values(["date", "id"], ascending=False, kind="stable").reset_index(drop=True)
+
+
+def page_journal():
+    """Journal public : chaque prévision terminée, son résultat, juste ou raté. Filtre par ligue, pagination serveur."""
+    hero("Journal", "Chaque prévision, et ce qui s'est passé.",
+         "Les prévisions du moteur sur des matchs terminés, de la plus récente à la plus ancienne. Chacune a été calculée "
+         "avec les seules données antérieures au match (backtest). Les matchs à venir n'y figurent pas.")
+    league = st.segmented_control("Ligue", ["Toutes", *JOURNAL_LEAGUES], default="Toutes", key="journal_league",
+                                  label_visibility="collapsed", on_change=lambda: st.session_state.update(journal_page=1)) or "Toutes"
+    J = journal_rows()
+    if league != "Toutes":
+        J = J[J["league"] == league]
+    if J.empty:
+        html(f'<p class="ec-note">{NO_JOURNAL}</p>')
+        return
+    pages = math.ceil(len(J) / JOURNAL_PAGE)
+    page = min(max(1, st.session_state.get("journal_page", 1)), pages)
+    html(f'<p class="ec-note">{len(J):,} prévisions terminées · page {page} / {pages}</p>'.replace(",", " "))
+    S = J.iloc[(page - 1) * JOURNAL_PAGE: page * JOURNAL_PAGE]
+    cols = ["Date", "Ligue", "Match", "Prévision du modèle", "Résultat", "Verdict"]
+    ui.data_table([{"id": r.id, "Date": fr_date(r.date), "Ligue": r.league, "Match": r.match, "Prévision du modèle": r.pred,
+                    "Résultat": r.result, "Verdict": "✅ Juste" if r.correct else "❌ Raté"} for r in S.itertuples()],
+                  columns=cols, row_id="id", page_size=JOURNAL_PAGE, selection_mode="none", key=f"journal_{league}_{page}")
+    with st.container(horizontal=True, gap="small"):
+        if st.button("← Plus récentes", disabled=page == 1, key="journal_prev"):
+            st.session_state["journal_page"] = page - 1
+            st.rerun()
+        if st.button("Plus anciennes →", disabled=page == pages, key="journal_next"):
+            st.session_state["journal_page"] = page + 1
+            st.rerun()
+
+
 def page_admin():
     """Back-office : la page Données, derrière un mot de passe (5 essais faux → blocage 15 min, par visiteur)."""
     expected = admin_password()
@@ -1504,6 +1563,7 @@ PAGES = {
     "team": st.Page(page_team, title="Fiche équipe", url_path="equipe"),
     "sim": st.Page(page_simulation, title="Simulation", url_path="simulation"),
     "lexique": st.Page(page_lexique, title="Lexique", url_path="lexique"),
+    "journal": st.Page(page_journal, title="Journal", url_path="journal"),
     "admin": st.Page(page_admin, title="Admin", url_path="admin"),
 }
 nav = st.navigation(list(PAGES.values()), position="hidden")
@@ -1546,6 +1606,7 @@ with l1.container(horizontal=True, gap="small"):
     st.page_link(PAGES["proof"], label="Modèles")
     st.page_link(PAGES["proof"], label="Méthodologie")
     html(f'<a class="ec-faq-link" href="{escape(url("accueil"))}#faq" target="_self">FAQ</a>')
+    st.page_link(PAGES["journal"], label="Journal")
     st.page_link(PAGES["lexique"], label="Lexique")
     for k in ("match", "leagues", "live", "web", "player", "team", "sim"):
         st.page_link(PAGES[k])
