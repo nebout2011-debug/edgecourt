@@ -281,6 +281,16 @@ a.ec-mini:hover, a.ec-mini:focus-visible {border-color:#00C853;}
 .ec-mini .t {font-weight:700;} .ec-mini .p {font-family:var(--mono); font-size:.82rem; color:#00C853;}
 .ec-models-head {display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; margin:26px 0 6px;}
 .ec-models-head b {font-family:var(--display); font-size:1.3rem;}
+.ec-footer {margin:64px 0 8px; border-top:2px solid var(--ink); padding:24px 0 10px; color:var(--ink);}
+.ec-footer-grid {display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 1.6fr) minmax(0, 1fr); gap:28px; align-items:start;}
+.ec-footer-brand img {width:150px; display:block; mix-blend-mode:multiply;}
+.ec-footer-brand p {margin:8px 0 0; font-family:var(--display); font-weight:650;}
+.ec-footer-disc {margin:0; font-size:.92rem; line-height:1.6; color:var(--muted);}
+.ec-footer-links {display:flex; flex-direction:column; gap:6px;}
+.ec-footer-links a {font-family:var(--mono); font-size:.8rem; letter-spacing:.06em; text-transform:uppercase; color:inherit; text-decoration:none;}
+.ec-footer-links a:hover, .ec-footer-links a:focus-visible {text-decoration:underline; text-decoration-color:#00C853; text-underline-offset:3px;}
+.ec-footer-copy {margin-top:22px; padding-top:12px; border-top:1px solid var(--line); font-family:var(--mono); font-size:.75rem; color:var(--muted);}
+@media (max-width: 700px) {.ec-footer-grid {grid-template-columns:1fr; gap:16px;} .ec-footer-links {flex-direction:row; flex-wrap:wrap; gap:8px 16px;}}
 .ec-def {margin:0; font-size:1rem; line-height:1.6; color:var(--ink);}
 .ec-board-h {font-family:var(--mono); font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
              border-top:2px solid var(--ink); padding-top:8px; margin:8px 0 4px;}
@@ -1680,3 +1690,16 @@ if nav is not PAGES["home"]:  # l'Accueil ne montre que des prévisions réelles
                  format_func=lambda m: "Données réelles" if m == "real" else "Démonstration synthétique")
 st.divider()
 nav.run()
+
+# Pied de page (toutes les pages) : logo + devise, avertissement, liens vers des pages existantes, copyright. Aucune pub.
+FOOTER_DISCLAIMER = ("Site de prédiction — pas un site de pari. Nos prédictions sont des conseils et des idées pour vous aider "
+                     "à juger — la décision finale vous appartient.")
+FOOTER_LINKS = [("La preuve", "preuve"), ("Journal", "journal"), ("Lexique", "lexique"), ("FAQ", "accueil#faq"),
+                ("Ligues", "ligues"), ("Aujourd'hui", "aujourdhui")]
+html('<footer class="ec-footer" aria-label="Pied de page"><div class="ec-footer-grid">'
+     f'<div class="ec-footer-brand"><img src="{asset_uri("logo-primary.png")}" alt="EDGECOURT"><p>{TAGLINE}</p></div>'
+     f'<p class="ec-footer-disc">{FOOTER_DISCLAIMER}</p>'
+     '<nav class="ec-footer-links" aria-label="Liens du site">'
+     + "".join(f'<a href="{escape(url(p.partition("#")[0]) + "".join(p.partition("#")[1:]))}" target="_self">{lab}</a>'
+               for lab, p in FOOTER_LINKS)
+     + '</nav></div><div class="ec-footer-copy">© 2026 EDGECOURT</div></footer>')

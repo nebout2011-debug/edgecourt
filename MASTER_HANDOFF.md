@@ -160,6 +160,9 @@ publicités aux bons endroits et absentes des 3 fiches) ; bouton « Détail → 
   modèle ». Grille bento (`st-key-ec_bento_totw`). Ligue sans match → « Pas encore d'Élo… ». Au 2026-11-13 : NFL SEA
   1606…, NBA Oklahoma City 1753…, PL Leicester 1628…. Tests `tests/test_team_of_week.py` (5, dont un qui vérifie que le
   rejeu redonne exactement les `elo_h/elo_a` enregistrés par le moteur).
+- **Pied de page** (toutes les pages, rendu après `nav.run()`) : logo + devise, avertissement (texte fourni), liens
+  `FOOTER_LINKS` vers des pages existantes (La preuve, Journal — en ligne depuis 9cb7c6e —, Lexique, FAQ → Accueil#faq,
+  Ligues, Aujourd'hui), « © 2026 EDGECOURT ». Aucune pub. Une colonne sous 700 px. Tests `tests/test_footer.py` (14).
 - **Déploiement Streamlit Cloud** : `app.py` ajoute `src/` à `sys.path` (le paquet n'y est pas installé). Données lues par
   l'app (≈ 8 Mo : predictions/report/simulation/split/configs_tried, connector_status, 2 DuckDB) suivies par git via
   `.gitignore` ; brut, journaux, `.env`, secrets restent ignorés. Rafraîchir les données = local puis commit + push.
