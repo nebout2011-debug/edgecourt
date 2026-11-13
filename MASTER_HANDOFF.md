@@ -140,6 +140,13 @@ publicités aux bons endroits et absentes des 3 fiches) ; bouton « Détail → 
   modèle a eu raison Y fois (Z %) ». Sans prédiction de test → « Pas encore de bilan ». Au 2026-11-13 (calculé) : NFL
   569/874 (65,1 %), NBA 882/1 320 (66,8 %), PL 34/69 (49,3 %), total 1 485/2 263 (65,6 %). Tests `tests/test_record.py` (2,
   dont un sur une copie modifiée des artefacts).
+- **Quel modèle gagne ?** (La preuve, après le bilan) : `leaderboard(report)` = `vainqueur.lignes` période « test » du
+  rapport (la comparaison du moteur), triée par log loss croissante ; une ligne par modèle en version publiée
+  (« X (calibré) » remplace X brut, « X (non calibré) » écarté). `ui.table` shadcn par ligue ; ★ = plus bas log loss,
+  « · publié » = `modele_vainqueur_selectionne_sur_validation`. Football : le moteur compare baseline, Élo 10/20/40 et
+  Poisson (pas de logit) — affichés tels quels. Au 2026-11-13 : NFL ★ Logit (calibré) 0,640 … Baseline 0,696 (874) ; NBA
+  ★ Logit (calibré) 0,609 … Baseline 0,687 (1 320) ; PL ★ Élo 40 0,966, Poisson (publié) 1,001, Baseline 1,067 (69).
+  Tests `tests/test_leaderboard.py` (2, dont un sur un rapport modifié).
 - **Déploiement Streamlit Cloud** : `app.py` ajoute `src/` à `sys.path` (le paquet n'y est pas installé). Données lues par
   l'app (≈ 8 Mo : predictions/report/simulation/split/configs_tried, connector_status, 2 DuckDB) suivies par git via
   `.gitignore` ; brut, journaux, `.env`, secrets restent ignorés. Rafraîchir les données = local puis commit + push.

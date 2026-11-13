@@ -272,6 +272,8 @@ a.ec-mini:hover, a.ec-mini:focus-visible {border-color:#00C853;}
 .ec-models-head {display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; margin:26px 0 6px;}
 .ec-models-head b {font-family:var(--display); font-size:1.3rem;}
 .ec-def {margin:0; font-size:1rem; line-height:1.6; color:var(--ink);}
+.ec-board-h {font-family:var(--mono); font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+             border-top:2px solid var(--ink); padding-top:8px; margin:8px 0 4px;}
 .ec-lex-intro {font-size:1.05rem; line-height:1.65; max-width:760px;}
 .ec-lex-intro a.ec-link {text-decoration:underline; text-decoration-color:#00C853; text-underline-offset:3px; font-weight:600;}
 [data-testid="stExpander"] summary:hover, [data-testid="stExpander"] summary:focus-visible {color:#0B6E4F;}
@@ -569,6 +571,41 @@ def public_record(origin: str = "real"):
          "modèle jugeait le plus probable (domicile, nul ou extérieur) est celui qui s'est produit — sur les matchs de test "
          "qu'il n'avait jamais vus.</p>")
     ticker_metrics([record_card(COMP[sp][0], recs[sp]) for sp in recs] + [record_card("Toutes ligues", total)], "bilan")
+
+
+def leaderboard(r) -> list[dict]:
+    """Classement des modèles comparés par le moteur (rapport → vainqueur.lignes, période « test »), log loss croissante.
+    Une ligne par modèle, dans la version publiée : « X (calibré) » remplace X brut ; « X (non calibré) » est écarté."""
+    rows = [l for l in (r or {}).get("vainqueur", {}).get("lignes", []) if l.get("periode") == "test"]
+    names = {l["modele"] for l in rows}
+    keep = [l for l in rows if "non calibr" not in l["modele"] and f'{l["modele"]} (calibré)' not in names]
+    return sorted(keep, key=lambda l: l["logloss"])
+
+
+def model_name(m: str) -> str:
+    base, _, rest = m.partition(" (")
+    return MODEL_LABEL.get(base, base) + (f" ({rest}" if rest else "")
+
+
+def model_leaderboard(origin: str = "real"):
+    """« Quel modèle gagne ? » : un tableau par ligue, du plus bas log loss de test au plus haut ; ★ = le plus bas."""
+    html('<div class="ec-h2">Quel modèle gagne ?</div><p class="ec-note">Pour chaque ligue, les modèles que le moteur compare, '
+         "classés par log loss sur les matchs de test (plus bas = meilleur). ★ = le meilleur sur le test. Le modèle publié "
+         "est choisi avant, sur la validation : il n'est donc pas toujours celui qui finit premier ici.</p>")
+    for col, sp in zip(st.columns(3), ("nfl", "nba", "soccer")):
+        r = report(origin, sp)
+        board = leaderboard(r)
+        sel = (r or {}).get("modele_vainqueur_selectionne_sur_validation")
+        with col:
+            html(f'<div class="ec-board-h">{COMP[sp][0]}</div>')
+            if not board:
+                html(f'<p class="ec-note">{NO_RECORD}</p>')
+                continue
+            ui.table([{"Modèle": ("★ " if i == 0 else "") + model_name(l["modele"])
+                                 + (" · publié" if l["modele"].partition(" (")[0] == sel else ""),
+                       "Log loss (test)": fr_num(l["logloss"]),
+                       "Matchs de test": f'{l["n"]:,}'.replace(",", " ")} for i, l in enumerate(board)],
+                     key=f"board_{sp}")
 
 
 def label_key(s: str) -> str:
@@ -969,6 +1006,7 @@ def page_proof():
                         ("IC 95 %", f"[{fr_num(ic['ic95_bas'], '+.3f')} ; {fr_num(ic['ic95_haut'], '+.3f')}]")], sport)
         st.caption("Ne compare pas au marché (aucune cote réelle) : aucun avantage économique n'est démontré.")
     public_record()
+    model_leaderboard()
     html(f'<p class="ec-note">Un mot vous échappe (log loss, IC 95 %, calibration…) ? {a(url("lexique"), "Voir le Lexique →")}</p>')
     html('<div class="ec-h2">Le détail</div>')
     st.markdown("Résultats **réels** et **démonstration synthétique** sont présentés séparément et ne sont jamais mélangés.")
