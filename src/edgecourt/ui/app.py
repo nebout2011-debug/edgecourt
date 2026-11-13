@@ -11,6 +11,7 @@ import hmac
 import json
 import math
 import re
+import sys
 import tempfile
 import threading
 import time
@@ -26,7 +27,11 @@ import streamlit as st
 import streamlit.components.v1 as components
 import streamlit_shadcn_ui as ui
 
-from edgecourt import config, pipeline
+# Streamlit Cloud lance `streamlit run src/edgecourt/ui/app.py` sans installer le paquet : on rend `src/` importable.
+# En local (pip install -e .) c'est le même dossier, donc sans effet.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from edgecourt import config, pipeline  # noqa: E402
 from edgecourt.ui import news
 from edgecourt.data import connectors, store
 from edgecourt.models.markets import dist_from_params
