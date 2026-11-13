@@ -7,6 +7,8 @@ click==8.5.0
 cloudpickle==3.1.2
 colorama==0.4.6
 duckdb==1.5.6
+feedparser==6.0.14
+feedparser-sgmllib==2.1.0
 h11==0.16.0
 httptools==0.9.0
 idna==3.20
@@ -39,6 +41,8 @@ scipy==1.17.1
 six==1.17.0
 starlette==1.7.0
 streamlit==1.65.0
+streamlit-facade==0.1.6
+streamlit-shadcn-ui==1.5.0
 threadpoolctl==3.7.0
 toml==0.10.2
 typing_extensions==4.16.0
