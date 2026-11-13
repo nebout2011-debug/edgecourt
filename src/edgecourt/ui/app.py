@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from edgecourt import config, pipeline  # noqa: E402
 from edgecourt.ui import news
 from edgecourt.data import connectors, store
+from edgecourt.features.state import ELO_MAIN, SportState
 from edgecourt.models.markets import dist_from_params
 
 ASSETS = Path(__file__).resolve().parents[3] / "assets"
@@ -189,6 +190,15 @@ a.ec-pill:hover, a.ec-pill:focus-visible {border-color:#00C853; outline:none;}
 .ec-nav-logo {display:block; width:200px; max-width:100%; mix-blend-mode:multiply;}
 .ec-tagline {margin:0; text-align:center; font-family:var(--display); font-weight:650; font-size:1.08rem; letter-spacing:-.01em; color:var(--ink);}
 [class*="st-key-ec_bento"] {display:grid !important; grid-template-columns:repeat(3, minmax(0, 1fr)); grid-auto-flow:dense; gap:14px;}
+[class*="st-key-ec_totw_"] {gap:4px !important; border-radius:12px; background:#fff; box-shadow:0 0 0 1px var(--line); padding:14px 16px;}
+.ec-totw-h {display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-family:var(--display); font-weight:700; font-size:1.05rem;}
+.ec-totw-h small, .ec-totw-asof {font-family:var(--mono); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:400;}
+.ec-totw-row {display:grid; grid-template-columns:22px minmax(0, 1fr) auto; align-items:center; gap:4px 10px; padding:8px 0; border-top:1px solid var(--line);}
+.ec-totw-row .rk {font-family:var(--mono); color:var(--muted); font-size:.8rem;}
+.ec-totw-row .elo {font-family:var(--mono); font-weight:700;}
+.ec-totw-row .fm {grid-column:2 / 4; display:flex; gap:4px;}
+.ec-tag-model {display:inline-block; font-family:var(--mono); font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; color:#0B6E4F;
+               border:1px solid #00C853; background:#e6f9ee; border-radius:999px; padding:3px 10px; margin-right:8px;}
 [class*="st-key-ec_tile_"], [class*="st-key-ec_soon_"] {position:relative; gap:0 !important; border-radius:12px; overflow:hidden; background:#fff;}
 [class*="st-key-ec_tile_"] {transition:transform .16s ease, box-shadow .16s ease; box-shadow:0 0 0 1px var(--line);}
 [class*="st-key-ec_tile_"]:hover, [class*="st-key-ec_tile_"]:focus-within {transform:translateY(-2px); box-shadow:0 0 0 2px #00C853, 0 10px 24px rgba(13,15,14,.10);}
@@ -1075,6 +1085,7 @@ def page_leagues():
                         footer=f"Statut : {ic['statut'] if ic else 'pas de rapport'} · Voir la ligue →")
                 html(f'<a class="ec-tile-link" href="{escape(url("ligues", ligue=sp))}" target="_self" '
                      f'aria-label="{name} — voir la ligue"></a>')
+    team_of_the_week(origin)
     ad(728, 90)
     # Compétitions sans données moteur : tuiles grisées « Bientôt », non cliquables, aucun chiffre. Pub après la 3e tuile.
     html(f'<div class="ec-h2">{SOON}</div><p class="ec-note">Ces compétitions arriveront quand le moteur aura des données '
@@ -1087,6 +1098,59 @@ def page_leagues():
     html('<div class="ec-h2">International</div>')
     soon_tiles("intl", SOON_INTL)
     html(f'<p class="ec-note">{PHOTO_CREDIT}</p>')
+
+
+NO_ELO = "Pas encore d'Élo pour cette ligue : aucun match terminé en base."
+
+
+@st.cache_data(show_spinner=False)
+def _current_elo(origin: str, sport: str, mtime: float) -> pd.DataFrame:
+    """Élo actuel du modèle principal (K = ELO_MAIN, la variable « elo_h / elo_a » du logit) : l'état du moteur
+    (SportState) rejoué sur tous les matchs terminés, dans l'ordre du moteur (date, game_id). Rien de nouveau."""
+    G = games(origin, sport)
+    F = G[G["status"] == "final"].sort_values(["game_date", "game_id"]) if len(G) else G
+    state = SportState(sport)
+    for r in F.itertuples(index=False):
+        state.update(r)
+    E = pd.DataFrame(list(state.elo[ELO_MAIN].items()), columns=["team", "elo"])
+    return E.sort_values(["elo", "team"], ascending=[False, True]).reset_index(drop=True)
+
+
+def current_elo(origin: str, sport: str) -> pd.DataFrame:
+    return _current_elo(origin, sport, _mt(config.db_path(origin)))
+
+
+def last_form(G: pd.DataFrame, team: str, n: int = 5) -> list[str]:
+    """V / N / D des n derniers matchs terminés de l'équipe (du plus récent au plus ancien)."""
+    F = G[(G["status"] == "final") & ((G["home_team"] == team) | (G["away_team"] == team))].sort_values(["game_date", "game_id"]).tail(n)
+    out = []
+    for r in F.iloc[::-1].itertuples():
+        mine, theirs = (r.home_score, r.away_score) if r.home_team == team else (r.away_score, r.home_score)
+        out.append("V" if mine > theirs else "N" if mine == theirs else "D")
+    return out
+
+
+def team_of_the_week(origin: str):
+    """« Équipe de la semaine » : selon le modèle, les 5 équipes au plus haut Élo actuel de chaque ligue du moteur."""
+    html('<div class="ec-h2">Équipe de la semaine</div><p class="ec-note"><span class="ec-tag-model">Selon le modèle</span>'
+         "Les 5 équipes au plus haut Élo du moteur (celui qu'utilise le modèle principal), après le dernier match en base, "
+         "avec leurs 5 derniers résultats (V victoire, N nul, D défaite).</p>")
+    with st.container(key="ec_bento_totw"):
+        for sp in ("nfl", "nba", "soccer"):
+            G = games(origin, sp)
+            top = current_elo(origin, sp).head(5)
+            with st.container(key=f"ec_totw_{sp}"):
+                done = G[G["status"] == "final"] if len(G) else G
+                asof = f"après le {fr_date(done['game_date'].max())}" if len(done) else ""
+                html(f'<div class="ec-totw-h">{COMP[sp][0]}<small>Élo</small></div><div class="ec-totw-asof">{asof}</div>')
+                if top.empty:
+                    html(f'<p class="ec-note">{NO_ELO}</p>')
+                    continue
+                html("".join(
+                    f'<div class="ec-totw-row"><span class="rk">{i}</span><span>{team_a(sp, r.team)}</span>'
+                    f'<span class="elo">{r.elo:.0f}</span><span class="fm">'
+                    + "".join(f'<span class="ec-wdl {x}">{x}</span>' for x in last_form(G, r.team)) + "</span></div>"
+                    for i, r in enumerate(top.itertuples(), start=1)))
 
 
 def soon_tiles(group: str, items):

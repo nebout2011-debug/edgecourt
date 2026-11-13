@@ -154,6 +154,12 @@ publicités aux bons endroits et absentes des 3 fiches) ; bouton « Détail → 
   filtre `segmented_control` Toutes / NFL / NBA / Premier League ; ligue vide → « Aucune prévision terminée… ». Au
   2026-11-13 : 4 562 prévisions, 183 pages. Le bouton « Columns » du Data Table est en anglais (texte du composant).
   Nav : rangée de pages + méga-menu (Journal n'est plus « Bientôt »). Tests `tests/test_journal.py` (5).
+- **Équipe de la semaine** (Ligues, après les 3 tuiles moteur) : `current_elo` rejoue le `SportState` du moteur
+  (K = `ELO_MAIN` = 20, l'Élo du logit) sur `Store.games()` terminés, ordre (date, game_id) comme `walk_forward` ; top 5
+  par ligue + forme V/N/D des 5 derniers matchs (`last_form`), date du dernier match en base. Étiquette « Selon le
+  modèle ». Grille bento (`st-key-ec_bento_totw`). Ligue sans match → « Pas encore d'Élo… ». Au 2026-11-13 : NFL SEA
+  1606…, NBA Oklahoma City 1753…, PL Leicester 1628…. Tests `tests/test_team_of_week.py` (5, dont un qui vérifie que le
+  rejeu redonne exactement les `elo_h/elo_a` enregistrés par le moteur).
 - **Déploiement Streamlit Cloud** : `app.py` ajoute `src/` à `sys.path` (le paquet n'y est pas installé). Données lues par
   l'app (≈ 8 Mo : predictions/report/simulation/split/configs_tried, connector_status, 2 DuckDB) suivies par git via
   `.gitignore` ; brut, journaux, `.env`, secrets restent ignorés. Rafraîchir les données = local puis commit + push.
