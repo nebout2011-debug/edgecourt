@@ -17,3 +17,15 @@ artifacts/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !artifacts/.gitkeep
+# Données lues par l'app déployée (Streamlit Cloud) : seulement ce que l'UI lit. Brut et journaux restent locaux.
+!data/processed/edgecourt_real.duckdb
+!data/processed/edgecourt_demo.duckdb
+!artifacts/real/
+!artifacts/demo/
+artifacts/*/*
+!artifacts/*/predictions_*.parquet
+!artifacts/*/report_*.json
+!artifacts/*/simulation_*.parquet
+!artifacts/*/split_*.json
+!artifacts/*/configs_tried.jsonl
+!artifacts/real/connector_status.json

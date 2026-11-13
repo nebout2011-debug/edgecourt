@@ -1,0 +1,250 @@
+{
+  "sport": "soccer",
+  "origin": "real",
+  "generated_at": "2026-10-11T15:33:02",
+  "split": {
+    "train_end": "2016-01-23",
+    "calib_end": "2016-04-02",
+    "n_final": 380,
+    "created_at": "2026-10-11T15:24:13"
+  },
+  "ligne_total_reference": 2.5,
+  "ajustement": {
+    "raison": "non requis (Poisson en ligne)"
+  },
+  "effectifs": {
+    "matchs_finaux_evalues": 152,
+    "calibration": 83,
+    "test": 69,
+    "a_venir": 0
+  },
+  "modele_vainqueur_selectionne_sur_validation": "poisson",
+  "calibration": "non calibré (effectif de calibration 83 < 300)",
+  "modele_total_selectionne_sur_validation": "base",
+  "vainqueur": {
+    "lignes": [
+      {
+        "modele": "baseline",
+        "periode": "validation",
+        "n": 83,
+        "brier": 0.6597647247832563,
+        "logloss": 1.087644441414922,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "elo10",
+        "periode": "validation",
+        "n": 83,
+        "brier": 0.6354679301700934,
+        "logloss": 1.0542640253764486,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "elo20",
+        "periode": "validation",
+        "n": 83,
+        "brier": 0.6186520258701304,
+        "logloss": 1.0306937183708087,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "elo40",
+        "periode": "validation",
+        "n": 83,
+        "brier": 0.607546797885466,
+        "logloss": 1.0149296074619916,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "poisson",
+        "periode": "validation",
+        "n": 83,
+        "brier": 0.5997375065509648,
+        "logloss": 1.004825832686725,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "baseline",
+        "periode": "test",
+        "n": 69,
+        "brier": 0.6441010285971196,
+        "logloss": 1.0672459768715197,
+        "skill_brier_vs_baseline": 0.0
+      },
+      {
+        "modele": "elo10",
+        "periode": "test",
+        "n": 69,
+        "brier": 0.588736301094966,
+        "logloss": 0.9898046141914726,
+        "skill_brier_vs_baseline": 0.08595658917474547
+      },
+      {
+        "modele": "elo20",
+        "periode": "test",
+        "n": 69,
+        "brier": 0.5772043278664989,
+        "logloss": 0.9720964323652106,
+        "skill_brier_vs_baseline": 0.10386057118449987
+      },
+      {
+        "modele": "elo40",
+        "periode": "test",
+        "n": 69,
+        "brier": 0.5751860268381896,
+        "logloss": 0.9664539004433766,
+        "skill_brier_vs_baseline": 0.10699408741673622
+      },
+      {
+        "modele": "poisson",
+        "periode": "test",
+        "n": 69,
+        "brier": 0.5975337537302124,
+        "logloss": 1.0008481338512782,
+        "skill_brier_vs_baseline": 0.07229809113693353
+      },
+      {
+        "modele": "poisson (non calibré)",
+        "periode": "test",
+        "n": 69,
+        "brier": 0.5975337537302124,
+        "logloss": 1.0008481338512782,
+        "skill_brier_vs_baseline": 0.07229809113693353
+      }
+    ],
+    "ic": {
+      "delta_logloss_vs_baseline": -0.06639784302024185,
+      "ic95_bas": -0.16115915935523129,
+      "ic95_haut": 0.02030938945092602,
+      "statut": "preuves insuffisantes",
+      "blocs": "semaines ISO"
+    },
+    "courbe_calibration": [
+      {
+        "classe": "0.0-0.1",
+        "n": 0,
+        "p_moyenne": NaN,
+        "frequence_observee": NaN
+      },
+      {
+        "classe": "0.1-0.2",
+        "n": 6,
+        "p_moyenne": 0.1641387850026018,
+        "frequence_observee": 0.16666666666666666
+      },
+      {
+        "classe": "0.2-0.3",
+        "n": 12,
+        "p_moyenne": 0.2652163908086367,
+        "frequence_observee": 0.25
+      },
+      {
+        "classe": "0.3-0.4",
+        "n": 14,
+        "p_moyenne": 0.33038800949391717,
+        "frequence_observee": 0.5
+      },
+      {
+        "classe": "0.4-0.5",
+        "n": 14,
+        "p_moyenne": 0.4489101547265057,
+        "frequence_observee": 0.5
+      },
+      {
+        "classe": "0.5-0.6",
+        "n": 12,
+        "p_moyenne": 0.5608351203153136,
+        "frequence_observee": 0.75
+      },
+      {
+        "classe": "0.6-0.7",
+        "n": 8,
+        "p_moyenne": 0.6388450231831144,
+        "frequence_observee": 0.625
+      },
+      {
+        "classe": "0.7-0.8",
+        "n": 3,
+        "p_moyenne": 0.7377072607467613,
+        "frequence_observee": 1.0
+      },
+      {
+        "classe": "0.8-0.9",
+        "n": 0,
+        "p_moyenne": NaN,
+        "frequence_observee": NaN
+      },
+      {
+        "classe": "0.9-1.0",
+        "n": 0,
+        "p_moyenne": NaN,
+        "frequence_observee": NaN
+      }
+    ]
+  },
+  "total": {
+    "ligne": 2.5,
+    "lignes": [
+      {
+        "modele": "base",
+        "periode": "validation",
+        "n": 83,
+        "brier": 0.5027202464070992,
+        "logloss": 0.6958684828354482
+      },
+      {
+        "modele": "model",
+        "periode": "validation",
+        "n": 83,
+        "brier": 0.5256624498846478,
+        "logloss": 0.7209695295624509
+      },
+      {
+        "modele": "base",
+        "periode": "test",
+        "n": 69,
+        "brier": 0.5019846328062255,
+        "logloss": 0.695132270882732
+      },
+      {
+        "modele": "model",
+        "periode": "test",
+        "n": 69,
+        "brier": 0.49212661715778355,
+        "logloss": 0.6850054261792186
+      }
+    ],
+    "ic": {
+      "delta_logloss_vs_baseline": -0.010126844703513558,
+      "ic95_bas": -0.045696688514194825,
+      "ic95_haut": 0.022546368214252425,
+      "statut": "preuves insuffisantes",
+      "blocs": "semaines ISO"
+    }
+  },
+  "reference_marche": {
+    "statut": "rendement non évaluable : aucune cote valide jointe à ces prévisions"
+  },
+  "avertissement": "Aucun avantage durable n'est démontré. Résultats rétrospectifs, simulation uniquement.",
+  "cotes": {
+    "importees": 0,
+    "admissibles": 0,
+    "refusees_posterieures_au_cutoff": 0,
+    "fixtures": false
+  },
+  "simulation": {
+    "test": {
+      "statut": "rendement non évaluable",
+      "raison": "aucune cote valide jointe"
+    },
+    "calibration": {
+      "statut": "rendement non évaluable",
+      "raison": "aucune cote valide jointe"
+    }
+  },
+  "config_hash": "9d6b6030eec0",
+  "journal": {
+    "ecrit": 0,
+    "chaine_valide": true
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "sport": "nfl",
+  "origin": "real",
+  "generated_at": "2026-10-11T16:07:16",
+  "split": {
+    "train_end": "2022-10-23",
+    "calib_end": "2026-10-08",
+    "n_final": 4428,
+    "kind": "refit"
+  },
+  "ligne_total_reference": 45.5,
+  "ajustement": {
+    "n_train": 3331,
+    "coef_logit": {
+      "elo_diff20": 0.4349,
+      "rest_diff": 0.0507,
+      "form_diff": 0.3557
+    },
+    "sd_marge": 13.581,
+    "sd_total": 13.724,
+    "taux_nul": 0.0033
+  },
+  "effectifs": {
+    "matchs_finaux_evalues": 1097,
+    "calibration": 1097,
+    "test": 0,
+    "a_venir": 207
+  },
+  "modele_vainqueur_selectionne_sur_validation": "logit",
+  "calibration": "calibré (Platt, n=1097)",
+  "modele_total_selectionne_sur_validation": "model",
+  "vainqueur": {
+    "lignes": [
+      {
+        "modele": "baseline",
+        "periode": "validation",
+        "n": 1097,
+        "brier": 0.4960829960433018,
+        "logloss": 0.6998330526314932,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "elo10",
+        "periode": "validation",
+        "n": 1097,
+        "brier": 0.4649862422653347,
+        "logloss": 0.6676104735014567,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "elo20",
+        "periode": "validation",
+        "n": 1097,
+        "brier": 0.45425559522008574,
+        "logloss": 0.6560956271425182,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "elo40",
+        "periode": "validation",
+        "n": 1097,
+        "brier": 0.4473553650932326,
+        "logloss": 0.6488590499802637,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "logit",
+        "periode": "validation",
+        "n": 1097,
+        "brier": 0.44086771520972384,
+        "logloss": 0.6408646504021517,
+        "skill_brier_vs_baseline": null
+      }
+    ],
+    "ic": null,
+    "courbe_calibration": []
+  },
+  "total": {
+    "ligne": 45.5,
+    "lignes": [
+      {
+        "modele": "base",
+        "periode": "validation",
+        "n": 1097,
+        "brier": 0.5006490746791828,
+        "logloss": 0.6937962719391579
+      },
+      {
+        "modele": "model",
+        "periode": "validation",
+        "n": 1097,
+        "brier": 0.4853243043385115,
+        "logloss": 0.6782754075154316
+      }
+    ],
+    "ic": null
+  },
+  "reference_marche": {
+    "statut": "rendement non évaluable : aucune cote valide jointe à ces prévisions"
+  },
+  "avertissement": "Aucun avantage durable n'est démontré. Résultats rétrospectifs, simulation uniquement.",
+  "version": "refit-2026-10-08-78d0d6ba24a9",
+  "type": "prevision_a_venir",
+  "date_limite_donnees": "2026-10-08",
+  "resultats_termines_utilises": 4428,
+  "config_hash": "289ac4166336",
+  "journal": {
+    "ecrit": 415,
+    "chaine_valide": true
+  },
+  "a_venir": 207
+}

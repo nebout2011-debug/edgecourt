@@ -1,0 +1,258 @@
+{
+  "sport": "nfl",
+  "origin": "real",
+  "generated_at": "2026-10-11T15:33:13",
+  "split": {
+    "train_end": "2019-12-29",
+    "calib_end": "2023-09-24",
+    "n_final": 4428,
+    "created_at": "2026-10-11T15:24:14"
+  },
+  "ligne_total_reference": 45.5,
+  "ajustement": {
+    "n_train": 2659,
+    "coef_logit": {
+      "elo_diff20": 0.4223,
+      "rest_diff": 0.0485,
+      "form_diff": 0.3897
+    },
+    "sd_marge": 13.663,
+    "sd_total": 13.686,
+    "taux_nul": 0.003
+  },
+  "effectifs": {
+    "matchs_finaux_evalues": 1769,
+    "calibration": 895,
+    "test": 874,
+    "a_venir": 207
+  },
+  "modele_vainqueur_selectionne_sur_validation": "logit",
+  "calibration": "calibré (Platt, n=895)",
+  "modele_total_selectionne_sur_validation": "model",
+  "vainqueur": {
+    "lignes": [
+      {
+        "modele": "baseline",
+        "periode": "validation",
+        "n": 895,
+        "brier": 0.505854451436628,
+        "logloss": 0.7205643887729843,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "elo10",
+        "periode": "validation",
+        "n": 895,
+        "brier": 0.4757851539037841,
+        "logloss": 0.6894017938265093,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "elo20",
+        "periode": "validation",
+        "n": 895,
+        "brier": 0.4656158600810503,
+        "logloss": 0.6786780553235036,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "elo40",
+        "periode": "validation",
+        "n": 895,
+        "brier": 0.4599218436931885,
+        "logloss": 0.673547435971387,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "logit",
+        "periode": "validation",
+        "n": 895,
+        "brier": 0.4597428397096318,
+        "logloss": 0.6726615386714856,
+        "skill_brier_vs_baseline": null
+      },
+      {
+        "modele": "baseline",
+        "periode": "test",
+        "n": 874,
+        "brier": 0.4953857948715259,
+        "logloss": 0.6963596890948377,
+        "skill_brier_vs_baseline": 0.0
+      },
+      {
+        "modele": "elo10",
+        "periode": "test",
+        "n": 874,
+        "brier": 0.46389478143616913,
+        "logloss": 0.663743322650415,
+        "skill_brier_vs_baseline": 0.06356866458700883
+      },
+      {
+        "modele": "elo20",
+        "periode": "test",
+        "n": 874,
+        "brier": 0.4533750856673688,
+        "logloss": 0.6524940905471401,
+        "skill_brier_vs_baseline": 0.08480402474005588
+      },
+      {
+        "modele": "elo40",
+        "periode": "test",
+        "n": 874,
+        "brier": 0.44740550125081113,
+        "logloss": 0.6465455231312276,
+        "skill_brier_vs_baseline": 0.0968543993740435
+      },
+      {
+        "modele": "logit",
+        "periode": "test",
+        "n": 874,
+        "brier": 0.4412232514172633,
+        "logloss": 0.6384430870214394,
+        "skill_brier_vs_baseline": 0.10933406652952005
+      },
+      {
+        "modele": "logit (calibré)",
+        "periode": "test",
+        "n": 874,
+        "brier": 0.44193311196748986,
+        "logloss": 0.6401962503198774,
+        "skill_brier_vs_baseline": 0.10790112162561816
+      }
+    ],
+    "ic": {
+      "delta_logloss_vs_baseline": -0.05616343877496046,
+      "ic95_bas": -0.07565152451011001,
+      "ic95_haut": -0.03573932723726044,
+      "statut": "écart favorable vs référence simple sur ce test (marché non battu ni comparé ; non garanti durable)",
+      "blocs": "semaines ISO"
+    },
+    "courbe_calibration": [
+      {
+        "classe": "0.0-0.1",
+        "n": 0,
+        "p_moyenne": NaN,
+        "frequence_observee": NaN
+      },
+      {
+        "classe": "0.1-0.2",
+        "n": 11,
+        "p_moyenne": 0.16673110083461176,
+        "frequence_observee": 0.36363636363636365
+      },
+      {
+        "classe": "0.2-0.3",
+        "n": 55,
+        "p_moyenne": 0.25650108734089994,
+        "frequence_observee": 0.2909090909090909
+      },
+      {
+        "classe": "0.3-0.4",
+        "n": 143,
+        "p_moyenne": 0.35468695986712473,
+        "frequence_observee": 0.40559440559440557
+      },
+      {
+        "classe": "0.4-0.5",
+        "n": 167,
+        "p_moyenne": 0.451529415864271,
+        "frequence_observee": 0.40119760479041916
+      },
+      {
+        "classe": "0.5-0.6",
+        "n": 217,
+        "p_moyenne": 0.5483823059712921,
+        "frequence_observee": 0.576036866359447
+      },
+      {
+        "classe": "0.6-0.7",
+        "n": 146,
+        "p_moyenne": 0.6455070367929854,
+        "frequence_observee": 0.7191780821917808
+      },
+      {
+        "classe": "0.7-0.8",
+        "n": 105,
+        "p_moyenne": 0.740499965542558,
+        "frequence_observee": 0.7619047619047619
+      },
+      {
+        "classe": "0.8-0.9",
+        "n": 30,
+        "p_moyenne": 0.830640240696314,
+        "frequence_observee": 0.9666666666666667
+      },
+      {
+        "classe": "0.9-1.0",
+        "n": 0,
+        "p_moyenne": NaN,
+        "frequence_observee": NaN
+      }
+    ]
+  },
+  "total": {
+    "ligne": 45.5,
+    "lignes": [
+      {
+        "modele": "base",
+        "periode": "validation",
+        "n": 895,
+        "brier": 0.5008262679263203,
+        "logloss": 0.6939735040513267
+      },
+      {
+        "modele": "model",
+        "periode": "validation",
+        "n": 895,
+        "brier": 0.4911993138009651,
+        "logloss": 0.6844101213800181
+      },
+      {
+        "modele": "base",
+        "periode": "test",
+        "n": 874,
+        "brier": 0.5003875510552414,
+        "logloss": 0.6935347364499126
+      },
+      {
+        "modele": "model",
+        "periode": "test",
+        "n": 874,
+        "brier": 0.4872670004742703,
+        "logloss": 0.6802045821240038
+      }
+    ],
+    "ic": {
+      "delta_logloss_vs_baseline": -0.013330154325908953,
+      "ic95_bas": -0.021456058522973324,
+      "ic95_haut": -0.004864726644465614,
+      "statut": "écart favorable vs référence simple sur ce test (marché non battu ni comparé ; non garanti durable)",
+      "blocs": "semaines ISO"
+    }
+  },
+  "reference_marche": {
+    "statut": "rendement non évaluable : aucune cote valide jointe à ces prévisions"
+  },
+  "avertissement": "Aucun avantage durable n'est démontré. Résultats rétrospectifs, simulation uniquement.",
+  "cotes": {
+    "importees": 0,
+    "admissibles": 0,
+    "refusees_posterieures_au_cutoff": 0,
+    "fixtures": false
+  },
+  "simulation": {
+    "test": {
+      "statut": "rendement non évaluable",
+      "raison": "aucune cote valide jointe"
+    },
+    "calibration": {
+      "statut": "rendement non évaluable",
+      "raison": "aucune cote valide jointe"
+    }
+  },
+  "config_hash": "c99c1d90d838",
+  "journal": {
+    "ecrit": 0,
+    "chaine_valide": true
+  }
+}

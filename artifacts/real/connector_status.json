@@ -1,0 +1,41 @@
+{
+  "nba": {
+    "statut": "ok",
+    "import_id": "nba-balldontlie-f713d5b86b-20261011T165016",
+    "rows_read": 6605,
+    "accepted": 6605,
+    "inserted": 6605,
+    "updated": 0,
+    "unchanged": 0,
+    "rejected": 0,
+    "reject_reasons": {},
+    "couverture": "BALLDONTLIE Games, saisons [2021, 2022, 2023, 2024, 2025], 6605 matchs",
+    "at": "2026-10-11T16:50:16"
+  },
+  "soccer": {
+    "statut": "ok",
+    "import_id": "soccer-statsbomb-e07d6d360b-20261011T152403",
+    "rows_read": 380,
+    "accepted": 380,
+    "inserted": 380,
+    "updated": 0,
+    "unchanged": 0,
+    "rejected": 0,
+    "reject_reasons": {},
+    "couverture": "StatsBomb Open Data, Premier League 2015/2016, 380 matchs (temps réglementaire, scores finaux)",
+    "at": "2026-10-11T15:24:03"
+  },
+  "nfl": {
+    "statut": "ok",
+    "import_id": "nfl-nflverse-f6cbaf3a4a-20261011T160704",
+    "rows_read": 4635,
+    "accepted": 4635,
+    "inserted": 0,
+    "updated": 0,
+    "unchanged": 4635,
+    "rejected": 0,
+    "reject_reasons": {},
+    "couverture": "nflverse-data schedules/games.csv, saisons 2010-2026, 4635 matchs",
+    "at": "2026-10-11T16:07:04"
+  }
+}
