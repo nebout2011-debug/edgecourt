@@ -62,7 +62,7 @@ def test_preuve_numbers_are_real_and_count_up():
     assert not at.exception
     r = json.loads((ROOT / "artifacts" / "real" / "report_nfl.json").read_text(encoding="utf-8"))
     metrics = {m["label"]: m["value"] for m in shadcn(at, "metric_card")}
-    assert list(metrics) == ["Matchs de test", "Log loss du modèle", "Écart vs référence", "IC 95 %"]
+    assert list(metrics)[:4] == ["Matchs de test", "Log loss du modèle", "Écart vs référence", "IC 95 %"]  # puis le bilan
     assert metrics["Matchs de test"] == str(r["effectifs"]["test"])  # vrai chiffre du moteur, jamais inventé
     js = next(e.proto.body for e in walk(at._tree, []) if getattr(e, "type", "") == "html" and "ec_tick_" in e.proto.body)
     assert all(k in js for k in ("requestAnimationFrame", '[data-slot="card-title"]', "prefers-reduced-motion", "el.textContent = p < 1"))

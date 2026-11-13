@@ -134,6 +134,12 @@ publicités aux bons endroits et absentes des 3 fiches) ; bouton « Détail → 
   en majuscule) ; les exemples chiffrés sont les vrais chiffres NFL (874, 0,640/0,696, −0,056, [−0,076 ; −0,036]).
   Liens : rangée de pages, méga-menu (Lexique + Comment ça marche → /lexique, plus « Bientôt »), La preuve. Aucune pub.
   Tests `tests/test_lexique.py` (2).
+- **Le bilan en clair** (La preuve, sous les 4 chiffres) : `record()` = sur les prédictions `segment == "test"` et
+  `status == "final"`, issue la plus probable (`p_*_final`, les probabilités du log loss) contre le vrai résultat (scores).
+  Une carte shadcn par ligue + « Toutes ligues », même compteur (`ticker_metrics`), phrase « Sur les X matchs de test, le
+  modèle a eu raison Y fois (Z %) ». Sans prédiction de test → « Pas encore de bilan ». Au 2026-11-13 (calculé) : NFL
+  569/874 (65,1 %), NBA 882/1 320 (66,8 %), PL 34/69 (49,3 %), total 1 485/2 263 (65,6 %). Tests `tests/test_record.py` (2,
+  dont un sur une copie modifiée des artefacts).
 - **Déploiement Streamlit Cloud** : `app.py` ajoute `src/` à `sys.path` (le paquet n'y est pas installé). Données lues par
   l'app (≈ 8 Mo : predictions/report/simulation/split/configs_tried, connector_status, 2 DuckDB) suivies par git via
   `.gitignore` ; brut, journaux, `.env`, secrets restent ignorés. Rafraîchir les données = local puis commit + push.

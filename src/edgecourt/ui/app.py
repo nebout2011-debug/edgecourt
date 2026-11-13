@@ -527,11 +527,48 @@ let tries = 0; const scan = () => {
 
 
 def ticker_metrics(items, prefix: str):
-    """Chiffres publics en cartes shadcn, avec compteur de 0 au vrai chiffre."""
-    for col, (label, value) in zip(st.columns(len(items)), items):
+    """Chiffres publics en cartes shadcn, avec compteur de 0 au vrai chiffre. items : (libellé, valeur[, description])."""
+    for col, (label, value, *desc) in zip(st.columns(len(items)), items):
         with col.container(key=f"ec_tick_{prefix}_{label_key(label)}"):
-            ui.metric_card(label, str(value), key=f"m_{prefix}_{label_key(label)}")
+            ui.metric_card(label, str(value), description=desc[0] if desc else None, key=f"m_{prefix}_{label_key(label)}")
     st.html(TICKER_JS, unsafe_allow_javascript=True)
+
+
+NO_RECORD = "Pas encore de bilan"
+
+
+def record(origin: str, sport: str):
+    """(X matchs de test, Y bonnes prédictions) : le résultat le plus probable du modèle (p_*_final, les probabilités
+    du log loss) contre le vrai résultat. None s'il n'y a aucune prédiction de test terminée."""
+    P = preds(origin, sport)
+    if P is None or "segment" not in P:
+        return None
+    T = P[(P["segment"] == "test") & (P["status"] == "final")].dropna(subset=["home_score", "away_score", *FINAL])
+    if T.empty:
+        return None
+    actual = (T["home_score"] == T["away_score"]).astype(int) + 2 * (T["home_score"] < T["away_score"]).astype(int)  # 0 dom, 1 nul, 2 ext
+    top = T[list(FINAL)].to_numpy().argmax(axis=1)
+    return len(T), int((top == actual.to_numpy()).sum())
+
+
+def record_card(label: str, rec):
+    if rec is None:
+        return label, "—", NO_RECORD
+    x, y = rec
+    z = f"{100 * y / x:.1f}".replace(".", ",")
+    th = lambda n: f"{n:,}".replace(",", " ")  # séparateur de milliers français
+    return label, f"{z} %", f"Sur les {th(x)} matchs de test, le modèle a eu raison {th(y)} fois ({z} %)"
+
+
+def public_record(origin: str = "real"):
+    """« Le bilan en clair » : une ligne simple par ligue + l'ensemble, calculée sur les prédictions de test."""
+    recs = {sp: record(origin, sp) for sp in ("nfl", "nba", "soccer")}
+    have = [r for r in recs.values() if r]
+    total = (sum(x for x, _ in have), sum(y for _, y in have)) if have else None
+    html('<div class="ec-h2">Le bilan en clair</div><p class="ec-note">Une prédiction est juste quand le résultat que le '
+         "modèle jugeait le plus probable (domicile, nul ou extérieur) est celui qui s'est produit — sur les matchs de test "
+         "qu'il n'avait jamais vus.</p>")
+    ticker_metrics([record_card(COMP[sp][0], recs[sp]) for sp in recs] + [record_card("Toutes ligues", total)], "bilan")
 
 
 def label_key(s: str) -> str:
@@ -931,6 +968,7 @@ def page_proof():
                         ("Écart vs référence", fr_num(ic["delta_logloss_vs_baseline"], "+.3f")),
                         ("IC 95 %", f"[{fr_num(ic['ic95_bas'], '+.3f')} ; {fr_num(ic['ic95_haut'], '+.3f')}]")], sport)
         st.caption("Ne compare pas au marché (aucune cote réelle) : aucun avantage économique n'est démontré.")
+    public_record()
     html(f'<p class="ec-note">Un mot vous échappe (log loss, IC 95 %, calibration…) ? {a(url("lexique"), "Voir le Lexique →")}</p>')
     html('<div class="ec-h2">Le détail</div>')
     st.markdown("Résultats **réels** et **démonstration synthétique** sont présentés séparément et ne sont jamais mélangés.")
