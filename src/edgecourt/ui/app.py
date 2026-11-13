@@ -503,16 +503,16 @@ TICKER_JS = """<script>(() => {
 const num = /[−+-]?\\d[\\d\\s\\u202f]*(?:,\\d+)?/g;
 function tick(el) {
   const end = el.textContent; if (el.dataset.ecTicked || !num.test(end)) return; el.dataset.ecTicked = 1;
-  const parts = end.match(num), t0 = performance.now();
+  const parts = end.match(num); let t0;
   const val = s => parseFloat(s.replace(/[\\s\\u202f]/g, '').replace('−', '-').replace(',', '.'));
   const fmt = (s, x) => { const d = (s.split(',')[1] || '').length, sign = /^[−+-]/.test(s) ? s[0] : '';  // signe d'origine
     let r = Math.abs(x).toFixed(d).replace('.', ','); if (/\\s|\\u202f/.test(s)) r = r.replace(/\\B(?=(\\d{3})+(?!\\d))/g, '\\u202f');
     return sign + r; };
-  (function step(now) {
-    const p = Math.min(1, (now - t0) / 900), e = 1 - Math.pow(1 - p, 3); let i = 0;
+  requestAnimationFrame(function step(now) {  // 1re image seulement quand l'onglet est visible : sinon le vrai chiffre reste
+    t0 ??= now; const p = Math.min(1, (now - t0) / 900), e = 1 - Math.pow(1 - p, 3); let i = 0;
     el.textContent = p < 1 ? end.replace(num, s => fmt(s, val(parts[i++]) * e)) : end;
     if (p < 1) requestAnimationFrame(step);
-  })(t0);
+  });
 }
 if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 let tries = 0; const scan = () => {
