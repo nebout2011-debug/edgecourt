@@ -26,6 +26,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import streamlit.components.v1 as components
 import streamlit_shadcn_ui as ui
+import facade  # streamlit-facade : seulement l'accordéon du Lexique (son thème global n'est pas chargé)
 
 # Streamlit Cloud lance `streamlit run src/edgecourt/ui/app.py` sans installer le paquet : on rend `src/` importable.
 # En local (pip install -e .) c'est le même dossier, donc sans effet.
@@ -270,6 +271,11 @@ a.ec-mini:hover, a.ec-mini:focus-visible {border-color:#00C853;}
 .ec-mini .t {font-weight:700;} .ec-mini .p {font-family:var(--mono); font-size:.82rem; color:#00C853;}
 .ec-models-head {display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; margin:26px 0 6px;}
 .ec-models-head b {font-family:var(--display); font-size:1.3rem;}
+.ec-def {margin:0; font-size:1rem; line-height:1.6; color:var(--ink);}
+.ec-lex-intro {font-size:1.05rem; line-height:1.65; max-width:760px;}
+.ec-lex-intro a.ec-link {text-decoration:underline; text-decoration-color:#00C853; text-underline-offset:3px; font-weight:600;}
+[data-testid="stExpander"] summary:hover, [data-testid="stExpander"] summary:focus-visible {color:#0B6E4F;}
+[data-testid="stExpander"] details[open] {box-shadow:inset 3px 0 0 #00C853;}
 .ec-faq {margin:20px 0 40px; scroll-margin-top:20px;}
 .ec-faq details {border-bottom:1px solid var(--line); padding:14px 0;}
 .ec-faq summary {font-weight:650; font-size:1.05rem; cursor:pointer;}
@@ -410,7 +416,7 @@ def nav_sport() -> str:
 SPORT_ICON = {"soccer": "⚽", "nba": "🏀", "nfl": "🏈", "nhl": "🏒", "mlb": "⚾"}
 # Méga-menu « La preuve » : None = pas (encore) de page dans l'app → « Bientôt », non cliquable (aucune page inventée).
 MEGA = [("La preuve", [("La preuve", "preuve"), ("Journal", None), ("Classement des modèles", "preuve"), ("Équipe de la semaine", None)]),
-        ("Comprendre", [("Lexique", None), ("Comment ça marche", "preuve"), ("FAQ", "accueil#faq")]),
+        ("Comprendre", [("Lexique", "lexique"), ("Comment ça marche", "lexique"), ("FAQ", "accueil#faq")]),
         ("Le site", [("Accueil", "accueil"), ("Aujourd'hui", "aujourdhui"), ("Ligues", "ligues"), ("En direct", "direct"),
                      ("La toile", "toile")])]
 NAV_JS = """<script>(() => {
@@ -925,6 +931,7 @@ def page_proof():
                         ("Écart vs référence", fr_num(ic["delta_logloss_vs_baseline"], "+.3f")),
                         ("IC 95 %", f"[{fr_num(ic['ic95_bas'], '+.3f')} ; {fr_num(ic['ic95_haut'], '+.3f')}]")], sport)
         st.caption("Ne compare pas au marché (aucune cote réelle) : aucun avantage économique n'est démontré.")
+    html(f'<p class="ec-note">Un mot vous échappe (log loss, IC 95 %, calibration…) ? {a(url("lexique"), "Voir le Lexique →")}</p>')
     html('<div class="ec-h2">Le détail</div>')
     st.markdown("Résultats **réels** et **démonstration synthétique** sont présentés séparément et ne sont jamais mélangés.")
     v1, v2 = st.tabs(["Données réelles", "Démonstration synthétique (fictive)"])
@@ -1243,6 +1250,40 @@ def visitor_key() -> str:
     return st.context.ip_address or "local"  # None = accès par localhost
 
 
+# Lexique : définitions fournies telles quelles (aucune inventée). Les exemples chiffrés sont les vrais chiffres NFL.
+LEXIQUE = [
+    ("Domicile / Nul / Extérieur", "les 3 résultats possibles. Exemple : 60 % domicile = le modèle dit que l'équipe à domicile gagne 6 fois sur 10."),
+    ("Élo", "le score de force d'une équipe, comme un classement. Il monte après une victoire, il baisse après une défaite."),
+    ("Élo 10 / 20 / 40", "la même idée, avec 3 vitesses de changement — 10 lent, 40 rapide. On compare les 3 pour voir laquelle prédit le mieux."),
+    ("Logit", "le modèle principal — le calcul qui transforme l'Élo + l'avantage à domicile en pourcentage."),
+    ("Baseline", "la prédiction la plus bête possible (par exemple « l'équipe à domicile gagne toujours ») — c'est la référence à battre."),
+    ("Log loss", "le score d'erreur du modèle — plus il est bas, mieux c'est. Exemple : 0,640 contre 0,696 = le modèle se trompe moins que la référence."),
+    ("Brier", "un autre score d'erreur — 0 = parfait."),
+    ("Skill Brier", "de combien le modèle est meilleur que la référence, en %."),
+    ("Écart contre référence", "le modèle moins la baseline. Exemple : −0,056 = meilleur de 0,056."),
+    ("IC 95 %", "l'intervalle de confiance — la zone où la vraie valeur se trouve probablement, à 95 % sûr. "
+                "Exemple : [−0,076 ; −0,036] entièrement sous zéro = l'amélioration est réelle, pas de la chance."),
+    ("Découpage", "comment on a séparé les matchs — Entraînement = apprendre, Validation = régler, "
+                  "Test = l'examen final sur des matchs jamais vus (874 pour la NFL)."),
+    ("Calibration", "est-ce que le pourcentage dit la vérité — 60 % annoncé doit gagner environ 60 fois sur 100. « Oui » = bon."),
+    ("Distribution", "le graphique de tous les résultats possibles et lesquels sont les plus probables."),
+    ("Forme", "les résultats récents d'une équipe."),
+    ("Écart domicile–extérieur", "la différence attendue entre les deux équipes."),
+]
+
+
+def page_lexique():
+    """Transparence : comment le modèle fonctionne, puis chaque terme de La preuve en accordéon (streamlit-facade)."""
+    hero("Lexique", "Les mots de la preuve, en clair.", "Chaque terme affiché sur le site, expliqué en une ligne.")
+    html('<div class="ec-h2">Comment ça marche</div>'
+         "<p class=\"ec-lex-intro\">Le modèle transforme l'Élo des deux équipes et l'avantage à domicile en probabilité : domicile, nul ou extérieur. "
+         f'Ensuite, {a(url("preuve"), "La preuve")} montre s\'il avait raison, sur des matchs qu\'il n\'avait jamais vus.</p>')
+    html('<div class="ec-h2">Les termes</div>')
+    for term, definition in LEXIQUE:
+        with facade.Accordion(term):
+            html(f'<p class="ec-def">{escape(definition[0].upper() + definition[1:])}</p>')
+
+
 def page_admin():
     """Back-office : la page Données, derrière un mot de passe (5 essais faux → blocage 15 min, par visiteur)."""
     expected = admin_password()
@@ -1386,6 +1427,7 @@ PAGES = {
     "player": st.Page(page_player, title="Fiche joueur", url_path="joueur"),
     "team": st.Page(page_team, title="Fiche équipe", url_path="equipe"),
     "sim": st.Page(page_simulation, title="Simulation", url_path="simulation"),
+    "lexique": st.Page(page_lexique, title="Lexique", url_path="lexique"),
     "admin": st.Page(page_admin, title="Admin", url_path="admin"),
 }
 nav = st.navigation(list(PAGES.values()), position="hidden")
@@ -1428,6 +1470,7 @@ with l1.container(horizontal=True, gap="small"):
     st.page_link(PAGES["proof"], label="Modèles")
     st.page_link(PAGES["proof"], label="Méthodologie")
     html(f'<a class="ec-faq-link" href="{escape(url("accueil"))}#faq" target="_self">FAQ</a>')
+    st.page_link(PAGES["lexique"], label="Lexique")
     for k in ("match", "leagues", "live", "web", "player", "team", "sim"):
         st.page_link(PAGES[k])
 if nav is not PAGES["home"]:  # l'Accueil ne montre que des prévisions réelles

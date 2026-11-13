@@ -129,6 +129,14 @@ publicités aux bons endroits et absentes des 3 fiches) ; bouton « Détail → 
   « 11 ligues · 6 coupes · 3 International » (3 moteur + 5 européennes + WNBA, NHL, MLB — la demande disait 10, aucun
   en-tête existant). 3 tuiles cliquables (lien étiré `a.ec-tile-link` → `ligues?ligue=`), 17 tuiles « Bientôt » grisées
   sans lien ni chiffre. Photos de ligue gardées + crédit. Les 2 pubs 728×90 aux mêmes places. Tests `tests/test_ui_libs.py` (3).
+- **Lexique** (`/lexique`, `page_lexique`, liste `LEXIQUE`) : « Comment ça marche » + 15 termes, un `facade.Accordion`
+  chacun (= `st.expander` ; le thème global de facade n'est pas chargé). Définitions = texte fourni, mot pour mot (1re lettre
+  en majuscule) ; les exemples chiffrés sont les vrais chiffres NFL (874, 0,640/0,696, −0,056, [−0,076 ; −0,036]).
+  Liens : rangée de pages, méga-menu (Lexique + Comment ça marche → /lexique, plus « Bientôt »), La preuve. Aucune pub.
+  Tests `tests/test_lexique.py` (2).
+- **Déploiement Streamlit Cloud** : `app.py` ajoute `src/` à `sys.path` (le paquet n'y est pas installé). Données lues par
+  l'app (≈ 8 Mo : predictions/report/simulation/split/configs_tried, connector_status, 2 DuckDB) suivies par git via
+  `.gitignore` ; brut, journaux, `.env`, secrets restent ignorés. Rafraîchir les données = local puis commit + push.
 
 ## Données réelles (au 2026-10-11)
 - NFL : 4 635 lignes (4 428 terminés, 207 à venir). Test final 874 matchs : log loss logit calibré 0,640 vs référence simple 0,696 (écart −0,056, IC95 par semaines [−0,076 ; −0,036]) → « écart favorable vs référence simple, marché non battu ni comparé ». Total : −0,013 vs référence. Ne démontre **aucun** avantage économique.
