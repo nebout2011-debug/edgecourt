@@ -29,3 +29,5 @@ artifacts/*/*
 !artifacts/*/split_*.json
 !artifacts/*/configs_tried.jsonl
 !artifacts/real/connector_status.json
+!artifacts/real/odds_snapshots.jsonl
+!artifacts/real/odds_meta.json

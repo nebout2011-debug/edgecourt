@@ -172,6 +172,19 @@ publicités aux bons endroits et absentes des 3 fiches) ; bouton « Détail → 
 - **Déploiement Streamlit Cloud** : `app.py` ajoute `src/` à `sys.path` (le paquet n'y est pas installé). Données lues par
   l'app (≈ 8 Mo : predictions/report/simulation/split/configs_tried, connector_status, 2 DuckDB) suivies par git via
   `.gitignore` ; brut, journaux, `.env`, secrets restent ignorés. Rafraîchir les données = local puis commit + push.
+- **Cotes (The Odds API, offre gratuite)** — `src/edgecourt/data/odds_api.py`. Clé : `st.secrets["ODDS_API_KEY"]`
+  (local `.streamlit/secrets.toml`, Cloud Secrets), jamais écrite ni affichée (erreurs réseau relancées sans l'URL).
+  Appels **uniquement** via `python -m edgecourt.cli odds` ou le bouton admin « Relever les cotes » (page Données) ;
+  aucun chargement de page n'appelle l'API (testé). 1 appel = 1 crédit (h2h, région eu) ; seulement les ligues avec
+  prévisions à venir ; ≥ 6 h entre deux appels par ligue ; arrêt sous 10 crédits. Instantanés append-only
+  `artifacts/real/odds_snapshots.jsonl` (cote médiane des bookmakers, probabilité implicite marge retirée, probabilités du
+  modèle) + journal (`kind: prediction_odds`) + `odds_meta.json` (dernier appel, crédits). Cote à la prévision = premier
+  instantané ; clôture = dernier avant le coup d'envoi. `market_report()` : log loss modèle vs marché + CLV par ligue (non
+  affiché). UI : ligne EV (= p × cote − 1, avec la probabilité, la cote et l'heure du relevé) sur les matchs à venir
+  d'Aujourd'hui et du détail de match, seulement si cote + probabilité ; tableau « Signaux : écart modèle – marché ».
+  Vérifié le 2026-11-14 : 1 relevé NFL réel, 26/26 événements associés, 499 crédits restants. NBA / Premier League :
+  aucune prévision à venir → aucun appel. Limite : sur Cloud, un relevé via le bouton admin vit dans le conteneur
+  (perdu au redéploiement) ; le relevé durable = commande locale puis commit + push. Tests `tests/test_odds_api.py` (15).
 
 ## Données réelles (au 2026-10-11)
 - NFL : 4 635 lignes (4 428 terminés, 207 à venir). Test final 874 matchs : log loss logit calibré 0,640 vs référence simple 0,696 (écart −0,056, IC95 par semaines [−0,076 ; −0,036]) → « écart favorable vs référence simple, marché non battu ni comparé ». Total : −0,013 vs référence. Ne démontre **aucun** avantage économique.

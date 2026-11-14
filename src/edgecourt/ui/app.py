@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from edgecourt import config, pipeline  # noqa: E402
 from edgecourt.ui import news
-from edgecourt.data import connectors, store
+from edgecourt.data import connectors, odds_api, store
 from edgecourt.features.state import ELO_MAIN, SportState
 from edgecourt.models.markets import dist_from_params
 
@@ -136,6 +136,8 @@ a.ec-comp .go {margin-left:auto; font-family:var(--mono); color:var(--muted);}
 .ec-row .go {font-family:var(--mono); font-size:.8rem; color:var(--accent); white-space:nowrap;}
 .ec-row.with-go {grid-template-columns:120px 1fr 240px 70px;}
 .ec-score {font-family:var(--mono); font-weight:700; padding:0 6px;}
+.ec-ev {font-size:.78rem; color:var(--muted, #5b6472); margin-top:4px; line-height:1.35;}
+.ec-ev b {color:inherit;}
 .ec-grid {display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:14px; margin:14px 0;}
 .ec-grid .ec-card {margin:0;} .ec-grid .ec-card h3 {font-size:1.3rem;}
 .ec-grid .full {grid-column:1 / -1;}
@@ -363,6 +365,62 @@ def upcoming(o: str, sp: str):
         return _parquet(str(files[-1]), _mt(files[-1])), (_json(str(rp), _mt(rp)) if rp.exists() else None)
     P = preds(o, sp)
     return (P[P["status"] != "final"].reset_index(drop=True) if P is not None else None), None
+
+
+@st.cache_data(show_spinner=False)
+def _snaps(path: str, mtime: float) -> pd.DataFrame:
+    return odds_api.load_snapshots("real")
+
+
+def odds_snaps() -> pd.DataFrame:
+    """Instantanés de cotes relevés hors chargement de page (fichier local) : aucune page n'appelle l'API."""
+    p = odds_api.snapshots_path("real")
+    return _snaps(str(p), _mt(p))
+
+
+OUT_COL = {"home": "p_home_final", "draw": "p_draw_final", "away": "p_away_final"}
+NO_ADVICE = "Indicateur de recherche, pas un conseil de pari."
+
+
+def ev_html(sp: str, r) -> str:
+    """EV sur l'issue choisie par le modèle — seulement si la probabilité du modèle ET une cote relevée existent, affichées avec."""
+    L = odds_api.latest(odds_snaps())
+    if not len(L):
+        return ""
+    s = L[(L["sport"] == sp) & (L["game_id"] == str(r["game_id"]))]
+    if s.empty:
+        return ""
+    s = s.iloc[0]
+    k = max(OUT_COL, key=lambda o: r[OUT_COL[o]])
+    p, o, m = r[OUT_COL[k]], s[f"odds_{k}"], s[f"implied_{k}"]
+    if pd.isna(p) or pd.isna(o) or pd.isna(m):
+        return ""
+    who = {"home": r["home_team"], "draw": "Match nul", "away": r["away_team"]}[k]
+    e = odds_api.ev(p, o)
+    when = s["fetched_at"].strftime("%d/%m %H:%M") + " UTC"
+    return (f'<div class="ec-ev">{escape(who)} · modèle <b>{pct(p)}</b> · cote {fr_num(o, ".2f")} (marché {pct(m)}, '
+            f'médiane de {int(s["n_books"])} bookmakers, relevée le {when}) · EV = {fr_num(p, ".3f")} × {fr_num(o, ".2f")} − 1 = '
+            f'<b>{"+" if e >= 0 else "−"}{fr_num(abs(100 * e), ".1f")} %</b><br>{NO_ADVICE}</div>')
+
+
+OUT_LABEL = {"home": "Domicile", "draw": "Nul", "away": "Extérieur"}
+
+
+def signals_table(sp: str):
+    """Signaux (affichage seulement) : matchs à venir où le modèle s'écarte le plus du marché (probabilité implicite sans marge)."""
+    html('<div class="ec-h2">Signaux : écart modèle – marché</div>')
+    S = odds_snaps()
+    D = odds_api.signals(S[S["sport"] == sp]) if len(S) else S
+    if not len(D):
+        html('<p class="ec-note">Aucune cote relevée pour les matchs à venir de cette ligue.</p>')
+        return
+    st.dataframe(pd.DataFrame({
+        "Match": D["home_team"] + " – " + D["away_team"], "Date": [fr_date(d) for d in D["game_date"]],
+        "Issue": [OUT_LABEL[k] for k in D["outcome"]], "Modèle": [pct(x) for x in D["p_model"]],
+        "Marché": [pct(x) for x in D["p_market"]], "Écart": [f'{"+" if g >= 0 else "−"}{fr_num(abs(100 * g), ".1f")} pts' for g in D["gap"]],
+        "Cote": [fr_num(x, ".2f") for x in D["odds"]], "Relevée le": [t.strftime("%d/%m %H:%M UTC") for t in D["fetched_at"]]}),
+        hide_index=True, use_container_width=True)
+    html(f'<p class="ec-note">Marché = probabilité implicite de la cote médiane, marge retirée. {NO_ADVICE}</p>')
 
 
 def up_label(UR) -> str:
@@ -776,7 +834,8 @@ def match_row(sp: str, r) -> str:
     when = fr_date(r.game_date) + ("<br>backtest" if r.kind == "P" else "")
     return (f'<div class="ec-row with-go"><div class="when">{a(go, when)}</div>'
             f'<div class="teams">{team_a(sp, r.home_team)}{score}{team_a(sp, r.away_team)}</div>'
-            f'<div>{a(go, prob_cell(r.p_home_final, r.p_draw_final, r.p_away_final))}</div>'
+            f'<div>{a(go, prob_cell(r.p_home_final, r.p_draw_final, r.p_away_final))}'
+            f'{ev_html(sp, pd.Series(r._asdict())) if r.kind == "U" else ""}</div>'
             f'<div>{a(go, "Détail →", "go")}</div></div>')
 
 
@@ -867,6 +926,8 @@ def page_today():
                 html('<span class="ec-tag bt">Backtest</span><span class="ec-note">prévision reconstruite avec les seules données antérieures au match</span>')
             html("".join(match_row(sp, r) for r in D.itertuples()))
             html('<p class="ec-note">Barre : domicile · nul · extérieur. Cliquez un match pour le détail, une équipe pour sa fiche.</p>')
+        if origin == "real":
+            signals_table(sp)
         if sp == "soccer":
             html(f'<p class="ec-note"><b>{SOON}</b> : ' + " · ".join(n for _, n, _ in SOON_LEAGUES)
                  + " · coupes nationales · International. " + a(url("ligues"), "Toutes les ligues →") + "</p>")
@@ -906,6 +967,8 @@ def page_match():
     items = [("Domicile", pct(g["p_home_final"]))] + ([("Nul", pct(g["p_draw_final"]))] if g["p_draw_final"] > 0.001 else []) \
         + [("Extérieur", pct(g["p_away_final"]))]
     html(big_html(items))
+    if src == "U":
+        html(ev_html(sport, g))
     st.caption(f"{wm_label(sport)} · modèle : {g['model_selected']}{' (calibré)' if g['calibrated'] else ' (non calibré)'} · "
                f"empreinte des données avant le match : {g['data_fp']}")
     if g["status"] == "final":
@@ -1354,6 +1417,23 @@ def page_data():
                         st.cache_data.clear()
                     except Exception as ex:
                         st.error(f"Import refusé : {ex}")
+    st.subheader("Cotes d'avant-match (The Odds API, offre gratuite)")
+    meta = odds_api.read_meta("real")
+    st.caption(f"Au plus un appel toutes les {odds_api.MIN_HOURS} h par ligue, seulement pour les ligues avec des prévisions à venir. "
+               f"Crédits restants (dernier appel) : {meta.get('credits', {}).get('remaining', '—')}.")
+    if st.button("Relever les cotes"):
+        try:
+            key = str(st.secrets.get("ODDS_API_KEY", "") or "")
+        except Exception:
+            key = ""
+        if not key:
+            st.info("Clé ODDS_API_KEY absente des secrets.")
+        else:
+            try:
+                st.json(odds_api.refresh(key, "real"))
+                st.cache_data.clear()
+            except odds_api.OddsError as ex:
+                st.error(f"Relevé impossible : {ex}")
     if st.button("Recalculer l'évaluation (réel)"):
         with st.spinner("Évaluation en cours…"):
             pipeline.run_all("real")

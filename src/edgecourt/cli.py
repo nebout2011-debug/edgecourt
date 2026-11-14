@@ -32,6 +32,8 @@ def main(argv: list[str] | None = None) -> int:
     o.add_argument("--csv", required=True)
     o.add_argument("--source", default=None)
     o.add_argument("--origin", choices=config.ORIGINS, default="real")
+    od = sub.add_parser("odds", help="relève les cotes d'avant-match (The Odds API, offre gratuite) des matchs à venir")
+    od.add_argument("--sport", choices=[*config.SPORTS, "all"], default="all")
     a = ap.parse_args(argv)
 
     sports = lambda s: list(config.SPORTS) if s == "all" else [s]  # noqa: E731
@@ -51,6 +53,11 @@ def main(argv: list[str] | None = None) -> int:
         _p(pipeline.import_games_csv("real", a.sport, a.csv))
     elif a.cmd == "import-odds":
         _p(pipeline.import_odds_csv(a.origin, a.sport, a.csv, a.source))
+    elif a.cmd == "odds":
+        import streamlit as st  # la clé vient de .streamlit/secrets.toml, jamais du code ni de la ligne de commande
+
+        from .data import odds_api
+        _p(odds_api.refresh(st.secrets["ODDS_API_KEY"], "real", sports(a.sport)))
     return 0
 
 
